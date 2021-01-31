@@ -1,3 +1,5 @@
+//to do assoziation!
+
 import hubitat.device.HubAction
 import hubitat.device.Protocol
 
@@ -12,12 +14,12 @@ metadata {
         capability "TamperAlert"
         capability "Polling"
         
-        attribute "VOC", "number"
-        attribute "DewPoint", "number"      
-        attribute "TVOC", "string"
-        attribute "Dew Point", "string"
-        attribute "VOC-Niveau", "string"
-        attribute "CO2-Niveau", "string"
+        attribute "VOC", "number"                                                                                                //ohne Messeinheit
+        attribute "DewPoint", "number"                                                                                           //ohne Messeinheit   
+        attribute "TVOC", "string"                                                                                               //mit Messeinheit
+        attribute "Dew Point", "string"                                                                                          //mit Messeinheit
+        attribute "VOC-Niveau", "enum", ["hervorragend","gut","mittelmäßig","schlecht","gesundheitschädlich","lebensgefahr"]     //Interpretation
+        attribute "CO2-Niveau", "enum", ["hervorragend","gut","mittelmäßig","schlecht","gesundheitschädlich","lebensgefahr"]     //Interpretation
         
 		fingerprint mfr:"0148", prod:"0005", model:"0001"        
         }	
@@ -76,16 +78,16 @@ metadata {
         vocChangeReport << ["10":"Meldung bei Änderung um 1.0 ppm"] //0x0A
 
     def co2ChangeReport = [:]
-        co2ChangeReport << ["0":"Keine Meldung"]                    //0x00
-        co2ChangeReport << ["1":"Meldung bei Änderung um 100 ppm"]  //0x01
-        co2ChangeReport << ["2":"Meldung bei Änderung um 200 ppm"]  //0x02
-        co2ChangeReport << ["3":"Meldung bei Änderung um 300 ppm"]  //0x03
-        co2ChangeReport << ["4":"Meldung bei Änderung um 400 ppm"]  //0x04
-        co2ChangeReport << ["5":"Meldung bei Änderung um 500 ppm"]  //0x05
-        co2ChangeReport << ["6":"Meldung bei Änderung um 600 ppm"]  //0x06
-        co2ChangeReport << ["7":"Meldung bei Änderung um 700 ppm"]  //0x07
-        co2ChangeReport << ["8":"Meldung bei Änderung um 800 ppm"]  //0x08
-        co2ChangeReport << ["9":"Meldung bei Änderung um 900 ppm"]  //0x09
+        co2ChangeReport << ["0":"Keine Meldung"]                     //0x00
+        co2ChangeReport << ["1":"Meldung bei Änderung um 100 ppm"]   //0x01
+        co2ChangeReport << ["2":"Meldung bei Änderung um 200 ppm"]   //0x02
+        co2ChangeReport << ["3":"Meldung bei Änderung um 300 ppm"]   //0x03
+        co2ChangeReport << ["4":"Meldung bei Änderung um 400 ppm"]   //0x04
+        co2ChangeReport << ["5":"Meldung bei Änderung um 500 ppm"]   //0x05
+        co2ChangeReport << ["6":"Meldung bei Änderung um 600 ppm"]   //0x06
+        co2ChangeReport << ["7":"Meldung bei Änderung um 700 ppm"]   //0x07
+        co2ChangeReport << ["8":"Meldung bei Änderung um 800 ppm"]   //0x08
+        co2ChangeReport << ["9":"Meldung bei Änderung um 900 ppm"]   //0x09
         co2ChangeReport << ["10":"Meldung bei Änderung um 1000 ppm"] //0x0A
 
     def ledIndikator = [:]
@@ -93,7 +95,7 @@ metadata {
         ledIndikator << ["1":"Led ein"] //0x01
 
     def checkIntervals = [:]
-        checkIntervals << ["0":"1 mal pro 24 Stunden"]
+        checkIntervals << ["0":"1 mal pro 24 Stunden"]        //health check
         checkIntervals << ["1":"Abfrage jede Minute"]
         checkIntervals << ["2":"Abfrage alle 2 Minuten"]
         checkIntervals << ["3":"Abfrage alle 2 Minuten"]
@@ -189,7 +191,7 @@ def zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNot
 
 def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) { 
     state.sec = 1
-	def encapsulatedCommand = cmd.encapsulatedCommand ([0x85:2, 0x59:2, 0x70:1, 0x5A:1, 0x7A:3, 0x72:1, 0x31:10, 0x71:8, 0x73:1, 0x86:2]) 
+	def encapsulatedCommand = cmd.encapsulatedCommand ([0x85:2, 0x59:2, 0x70:1, 0x5A:1, 0x7A:3, 0x72:1, 0x31:10, 0x71:8, 0x73:1, 0x86:2]) //Clasen mit Verschlüsselung. Wichtig immer Überprüfen!
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
 	} else {
@@ -197,48 +199,48 @@ def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cm
 	}
 }
 
-def vocNotifity (int value) {
+def vocNotifity (int value) { //Interpretation, aber, nicht funktioniert
     def msg = ""
     switch (value) {    
         case 0:    
-            msg = "VOC-Niveau hervorragend."
+            msg = "hervorragend"
             break;    
         case 1:    
-            msg = "VOC-Niveau gut. Lüften empfohlen."
+            msg = "gut"
             break;    
         case 2:    
-            msg = "VOC-Niveau mittelmäßig. Verstärktes Lüften empfohlen."
+            msg = "mittelmäßig"
             break;    
         case 3:    
-            msg = "VOC-Niveau schlecht. Verstärktes Lüften notwendig."
+            msg = "schlecht"
             break;    
         case 4:    
-            msg = "VOC-Niveau gesundheitsschädlich. Nur nutzen, wenn unvermeidbar."
+            msg = "gesundheitsschädlich"
             break;    
         case 5:    
-            msg = "VOC-Niveau tödlich. Raum sofort verlassen."
+            msg = "lebensgefahr"
             break;
     }
     createEvent (name: "VOC-Niveau", value: msg, displayed: true)
 }
 
-def co2Notifity (int value) {
+def co2Notifity (int value) {    //Interpretation, aber, nicht funktioniert
     def msg = ""
     switch (value) {
         case 1:
-            msg = "CO2-Niveau hervorragend. Keine Bedenken."
+            msg = "gut"
             break;
         case 2:
-            msg = "CO2-Niveau tolerabel. Regelmäßiges Lüften empfohlen."
+            msg = "mittelmäßig"
             break;
         case 3:
-            msg = "CO2-Niveau mittel. Lüften ist notwendig."
+            msg = "schlecht"
             break;
         case 4:
-            msg = "CO2-Niveau hoch. Lüften unbedingt notwendig."
+            msg = "gesundheitsschädlich"
             break;
         case 5:
-            msg = "CO2-Niveau gesundheitsschädlich. Raum verlassen. Unverzüglich Lüften."
+            msg = "lebensgefahr"
             break;
     }
     createEvent (name:"CO2-Niveau", value: msg, displayed: true)
@@ -272,21 +274,19 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelReport
 		case 0x01:
 			map.name = "temperature"
             map.unit = cmd.scale == 1 ? "°F" : "°C"
-            rund = TemperaturAufloesung == "Keine Nachkommastelle" ? 0 : TemperaturAufloesung == "Zwei Nachkommastellen" ? 2 : 1
-            map.value = (cmd.scaledSensorValue.toFloat()).round(rund)  
+            map.value = cmd.scaledSensorValue.toFloat()
         	break;
 		case 0x05:
 			map.name = "humidity"			
 			map.unit = cmd.scale == 1 ? "g/m^3" : "%"
-            rund = FeuchtigkeitsAufloesung == "Eine Nachkommastelle" ? 1 : FeuchtigkeitsAufloesung == "Zwei Nachkommastellen" ? 2 : 0
-            map.value = (cmd.scaledSensorValue.toFloat()).round(rund)
+            map.value = cmd.scaledSensorValue.toFloat()
 			break;
 		case 0x0B:
         	map.name = "DewPoint"
             map.unit = cmd.scale == 1 ? "°F" : "°C"
             map.value = cmd.scaledSensorValue.toFloat() 
             msg = map.value.toString() + " " + map.unit
-            result << createEvent (name:"Dew Point", value: msg)
+            sendEvent (name:"Dew Point", value: msg)
            	break;
         case 0x11:
         	map.name = "carbonDioxide"
@@ -309,7 +309,7 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelReport
             map.unit = "ppb"
             map.value = (cmd.scaledSensorValue.toFloat() * 1000).toInteger()
             msg = map.value.toString() + " " + map.unit
-            result << createEvent(name:"TVOC", value: msg)
+            sendEvent(name:"TVOC", value: msg)
             if (map.value < 65) {
 	            vocNotifity (0)
                 } else if (map.value < 220) {
@@ -327,8 +327,7 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelReport
 		default:
 			map.descriptionText = cmd.toString()
 	}
-    result << createEvent(map)
-    result
+    createEvent(map)
 }
 
 def zwaveEvent(hubitat.zwave.Command cmd) {
@@ -472,7 +471,6 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd ) 
 }
 
 def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
-	log.debug "$cmd"
 	def zWaveLibraryTypeDisp  = String.format("%02X",cmd.zWaveLibraryType)
 	def zWaveLibraryTypeDesc  = ""
 	switch(cmd.zWaveLibraryType) {
@@ -523,6 +521,10 @@ def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 	def zWaveProtocolVersionDisp = String.format("%d.%02d",cmd.zWaveProtocolVersion,cmd.zWaveProtocolSubVersion)
 	sendEvent([name: "applicationVersion", value:  applicationVersionDisp])
 	sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
+    sendEvent([name: "applicationSubVersion", value: cmd.applicationSubVersion])
+    sendEvent([name: "firmwareSubVersion", value: cmd.firmware0SubVersion])
+    sendEvent([name: "firmware0Version", value: cmd.firmware0Version])
+    sendEvent([name: "hardwareVersion", value: cmd.hardwareVersion])
 } 
 
 def configure() {
@@ -570,13 +572,11 @@ def configure() {
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  VOCChageReporting == "0" ? [0x00] : VOCChageReporting == "1" ? [0x01] : VOCChageReporting == "2" ? [0x02] : VOCChageReporting == "3" ? [0x03] : VOCChageReporting == "4" ? [0x04] : VOCChageReporting == "10" ? [0x0A] : VOCChageReporting == "6" ? [0x06] : VOCChageReporting == "7" ? [0x07] : VOCChageReporting == "8" ? [0x08] : VOCChageReporting == "9" ? [0x09] : [0x05], 													parameterNumber:6, size:1, scaledConfigurationValue:  VOCChageReporting == "0" ? 0x00 : VOCChageReporting == "1" ? 0x01 : VOCChageReporting == "2" ? 0x02 : VOCChageReporting == "3" ? 0x03 : VOCChageReporting == "4" ? 0x04 : VOCChageReporting == "10" ? 0x0A : VOCChageReporting == "6" ? 0x06 : VOCChageReporting == "7" ? 0x07 : VOCChageReporting == "8" ? 0x08 : VOCChageReporting == "9" ? 0x09 : 0x05)
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  CO2ChangeReporting == "0" ? [0x00] : CO2ChangeReporting == "1" ? [0x01] : CO2ChangeReporting == "2" ? [0x02] : CO2ChangeReporting == "3" ? [0x03] : CO2ChangeReporting == "4" ? [0x04] : CO2ChangeReporting == "10" ? [0x0A] : CO2ChangeReporting == "6" ? [0x06] : CO2ChangeReporting == "7" ? [0x07] : CO2ChangeReporting == "8" ? [0x08] : CO2ChangeReporting == "9" ? [0x09] : [0x05], 											parameterNumber:7, size:1, scaledConfigurationValue:  CO2ChangeReporting == "0" ? 0x00 : CO2ChangeReporting == "1" ? 0x01 : CO2ChangeReporting == "2" ? 0x02 : CO2ChangeReporting == "3" ? 0x03 : CO2ChangeReporting == "4" ? 0x04 : CO2ChangeReporting == "10" ? 0x0A : CO2ChangeReporting == "6" ? 0x06 : CO2ChangeReporting == "7" ? 0x07 : CO2ChangeReporting == "8" ? 0x08 : CO2ChangeReporting == "9" ? 0x09 : 0x05)
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  LedIndikation == "0" ? [0x00] : [0x01], 																																																																																															parameterNumber:8, size:1, scaledConfigurationValue:  LedIndikation == "0" ? 0x00 : 0x01)
-	
-	cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     	//get temperature
+	cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     //get temperature
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	//get humidity
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     //get dewpoint
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	//get carbon dioxide
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)     	//get voc
-    
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)     	//get voc    
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:1)               //get pamam - 1..8
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:2)
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:3)
@@ -584,8 +584,7 @@ def configure() {
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:5)
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:6)
 	cmds << zwave.configurationV1.configurationGet(parameterNumber:7)
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)
-	
+	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)	
     cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet()                  
 	cmds << zwave.versionV2.versionGet()
     cmds << zwave.notificationV8.notificationGet(notificationType:13)
@@ -641,13 +640,13 @@ def ping() {
 	secureSequence (cmds)
 }
 
-def poll() { 
-	def cmds = []
+def poll() { //total unklar was Polling macht!!!
+	/*def cmds = []
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     	//get temperature
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	    //get humidity
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    //get carbon dioxide
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)			//get voc
-	secureSequence (cmds)
+	secureSequence (cmds)*/
 }
