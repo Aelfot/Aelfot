@@ -1,4 +1,5 @@
 //to do assoziation!
+//version 0.88
 
 import hubitat.device.HubAction
 import hubitat.device.Protocol
@@ -9,7 +10,6 @@ metadata {
         capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Sensor"
-        capability "Health Check"
         capability "Configuration"
         capability "TamperAlert"
         capability "Polling"
@@ -18,8 +18,8 @@ metadata {
         attribute "DewPoint", "number"                                                                                           //ohne Messeinheit   
         attribute "TVOC", "string"                                                                                               //mit Messeinheit
         attribute "Dew Point", "string"                                                                                          //mit Messeinheit
-        attribute "VOC-Niveau", "enum", ["hervorragend","gut","mittelmäßig","schlecht","gesundheitschädlich","lebensgefahr"]     //Interpretation
-        attribute "CO2-Niveau", "enum", ["hervorragend","gut","mittelmäßig","schlecht","gesundheitschädlich","lebensgefahr"]     //Interpretation
+        attribute "VOC Niveau", "enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]               //Interpretation
+        attribute "CO2 Niveau", "enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]               //Interpretation
         
 		fingerprint mfr:"0148", prod:"0005", model:"0001"        
         }	
@@ -95,16 +95,13 @@ metadata {
         ledIndikator << ["1":"Led ein"] //0x01
 
     def checkIntervals = [:]
-        checkIntervals << ["0":"1 mal pro 24 Stunden"]        //health check
-        checkIntervals << ["1":"Abfrage jede Minute"]
-        checkIntervals << ["2":"Abfrage alle 2 Minuten"]
-        checkIntervals << ["3":"Abfrage alle 2 Minuten"]
-        checkIntervals << ["4":"Abfrage alle 4 Minuten"]
-        checkIntervals << ["5":"Abfrage alle 5 Minuten"]
-        checkIntervals << ["10":"Abfrage alle 10 Minuten"]
-        checkIntervals << ["15":"Abfrage alle 15 Minuten"]
-        checkIntervals << ["30":"Abfrage alle 30 Minuten"]
-        checkIntervals << ["60":"Abfrage stündlich"]
+        checkIntervals << ["1"  :"Abfrage jede Minute"]
+        checkIntervals << ["5"  :"Abfrage alle 5 Minuten"]
+        checkIntervals << ["10" :"Abfrage alle 10 Minuten"]
+        checkIntervals << ["15" :"Abfrage alle 15 Minuten"]
+        checkIntervals << ["30" :"Abfrage alle 30 Minuten"]
+        checkIntervals << ["60" :"Abfrage stündlich"]
+		checkIntervals << ["180":"Abfrage alle 3 Stunden"]
 
    
     preferences {
@@ -116,45 +113,35 @@ metadata {
         input "VOCChageReporting",       "enum", title: "VOC-on Change Reporting", 			options: vocChangeReport, 	description: "Default: 0.5 ppm", 						required: false, displayDuringSetup: true
         input "CO2ChangeReporting",      "enum", title: "CO2 Change Reporting", 			options: co2ChangeReport, 	description: "Default: 500 ppm", 						required: false, displayDuringSetup: true
         input "LedIndikation",           "enum", title: "Luftgüte per LED signalisieren", 	options: ledIndikator, 		description: "Default: Luftgüte per Led signalisieren", required: false, displayDuringSetup: true   
-		input "Checking",                "enum", title: "Check Interval",                   options: checkIntervals,    description: "Default: Keine Prüfung",                  required: false, displayDuringSetup: true
+		//input "Checking",                "enum", title: "Check Interval",                   options: checkIntervals,    description: "Default: Keine Prüfung",                  required: false, displayDuringSetup: true
     }
 
 }
 
 def installed() {
-    def chck = 0
-    switch (Checking) {        
+    /*switch (Checking) {        
         case "1":
-            chck = 1*60
-            break;        
-        case "2":
-            chck = 2*60
-            break;        
-        case "3":
-            chck = 3*60
-            break;        
-        case "4":
-            chck = 4*60
+            runEvery1Minute(poll)
             break;        
         case "5":
-            chck = 5*60
+            runEvery5Minutes(poll)
             break;        
         case "10":
-            chck = 10*60
+            runEvery10Minutes(poll)
             break;        
         case "15":
-            chck = 15*60
+            runEvery15Minutes(poll)
             break;        
         case "30":
-            chck = 30*60
-            break;        
-        case "60":
-            chck = 60*60
-            break;        
-        default:
-            chck = 24*60*60        
-    }
-    sendEvent(name: "checkInterval", value: chck, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+            runEvery30Minutes(poll)
+            break;
+		case "60":
+			runEvery1Hour(poll)
+			break;
+		case "180":
+			runEvery3Hours(poll)
+			break;
+    }*/
     sendEvent(name: "tamper", value: "clear", displayed: false)
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
 	response([
@@ -191,7 +178,7 @@ def zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNot
 
 def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) { 
     state.sec = 1
-	def encapsulatedCommand = cmd.encapsulatedCommand ([0x85:2, 0x59:2, 0x70:1, 0x5A:1, 0x7A:3, 0x72:1, 0x31:10, 0x71:8, 0x73:1, 0x86:2]) //Clasen mit Verschlüsselung. Wichtig immer Überprüfen!
+	def encapsulatedCommand = cmd.encapsulatedCommand ([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x04,0x86:0x12]) 
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
 	} else {
@@ -199,8 +186,9 @@ def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cm
 	}
 }
 
-def vocNotifity (int value) { //Interpretation, aber, nicht funktioniert
+def vocNotifity (int value) { 
     def msg = ""
+    log.trace ("voc Notifity ${value}")
     switch (value) {    
         case 0:    
             msg = "hervorragend"
@@ -221,11 +209,12 @@ def vocNotifity (int value) { //Interpretation, aber, nicht funktioniert
             msg = "lebensgefahr"
             break;
     }
-    createEvent (name: "VOC-Niveau", value: msg, displayed: true)
+    sendEvent (name: "VOC Niveau", value: msg)
 }
 
-def co2Notifity (int value) {    //Interpretation, aber, nicht funktioniert
+def co2Notifity (int value) {    
     def msg = ""
+    log.trace ("CO2 Notifity ${value}")
     switch (value) {
         case 1:
             msg = "gut"
@@ -243,7 +232,7 @@ def co2Notifity (int value) {    //Interpretation, aber, nicht funktioniert
             msg = "lebensgefahr"
             break;
     }
-    createEvent (name:"CO2-Niveau", value: msg, displayed: true)
+    sendEvent (name:"CO2 Niveau", value: msg)
 }
 
 def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
@@ -529,41 +518,31 @@ def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 
 def configure() {
 	def cmds = []
-    log.debug ("1")
 	def tmpE = Temperatureeinheit == "1" ? 1 : 0
-    def chck = 0
-    switch (Checking) {        
+    /*switch (Checking) {        
         case "1":
-            chck = 1*60
-            break;
-        case "2":
-            chck = 2*60
-            break;        
-        case "3":
-            chck = 3*60
-            break;        
-        case "4":
-            chck = 4*60
+            runEvery1Minute(poll)
             break;        
         case "5":
-            chck = 5*60
+            runEvery5Minutes(poll)
             break;        
         case "10":
-            chck = 10*60
+            runEvery10Minutes(poll)
             break;        
         case "15":
-            chck = 15*60
+            runEvery15Minutes(poll)
             break;        
         case "30":
-            chck = 30*60
-            break;        
-        case "60":
-            chck = 60*60
+            runEvery30Minutes(poll)
             break;
-        default:
-            chck = 24*60*60        
-    }
-    sendEvent(name: "checkInterval", value: chck, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
+		case "60":
+			runEvery1Hour(poll)
+			break;
+		case "180":
+			runEvery3Hours(poll)
+			break;
+    }*/
+    sendEvent(name: "tamper", value: "clear", displayed: false)
     cmds << zwave.configurationV1.configurationSet(configurationValue:  Temperaturdifferenz == "0" ? [0x00] : Temperaturdifferenz == "1" ? [0x01] : Temperaturdifferenz == "2" ? [0x02] : Temperaturdifferenz == "3" ? [0x03] : Temperaturdifferenz == "4" ? [0x04] : Temperaturdifferenz == "10" ? [0x0A] : Temperaturdifferenz == "6" ? [0x06] : Temperaturdifferenz == "7" ? [0x07] : Temperaturdifferenz == "8" ? [0x08] : Temperaturdifferenz == "9" ? [0x09] : [0x05], 								parameterNumber:1, size:1, scaledConfigurationValue:  Temperaturdifferenz == "0" ? 0x00 : Temperaturdifferenz == "1" ? 0x01 : Temperaturdifferenz == "2" ? 0x02 : Temperaturdifferenz == "3" ? 0x03 : Temperaturdifferenz == "4" ? 0x04 : Temperaturdifferenz == "10" ? 0x0A : Temperaturdifferenz == "6" ? 0x06 : Temperaturdifferenz == "7" ? 0x07 : Temperaturdifferenz == "8" ? 0x08 : Temperaturdifferenz == "9" ? 0x09 : 0x05)
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  Feuchtigkeitsdifferenz == "0" ? [0x00] : Feuchtigkeitsdifferenz == "1" ? [0x01] : Feuchtigkeitsdifferenz == "2" ? [0x02] : Feuchtigkeitsdifferenz == "3" ? [0x03] : Feuchtigkeitsdifferenz == "4" ? [0x04] : Feuchtigkeitsdifferenz == "10" ? [0x0A] : Feuchtigkeitsdifferenz == "6" ? [0x06] : Feuchtigkeitsdifferenz == "7" ? [0x07] : Feuchtigkeitsdifferenz == "8" ? [0x08] : Feuchtigkeitsdifferenz == "9" ? [0x09] : [0x05], 	parameterNumber:2, size:1, scaledConfigurationValue:  Feuchtigkeitsdifferenz == "0" ? 0x00 : Feuchtigkeitsdifferenz == "1" ? 0x01 : Feuchtigkeitsdifferenz == "2" ? 0x02 : Feuchtigkeitsdifferenz == "3" ? 0x03 : Feuchtigkeitsdifferenz == "4" ? 0x04 : Feuchtigkeitsdifferenz == "10" ? 0x0A : Feuchtigkeitsdifferenz == "6" ? 0x06 : Feuchtigkeitsdifferenz == "7" ? 0x07 : Feuchtigkeitsdifferenz == "8" ? 0x08 : Feuchtigkeitsdifferenz == "9" ? 0x09 : 0x05)
 	cmds << zwave.configurationV1.configurationSet(configurationValue:  Temperatureeinheit == "1" ? [0x01] : [0x00], 																																																																																														parameterNumber:3, size:1, scaledConfigurationValue:  Temperatureeinheit == "1" ? 0x01 : 0x00)
@@ -593,60 +572,16 @@ def configure() {
 }
 
 def updated() {
-	def chck = 0
-    switch (Checking) {        
-        case "1":
-            chck = 1*60
-            break;
-        case "2":
-            chck = 2*60
-            break;        
-        case "3":
-            chck = 3*60
-            break;        
-        case "4":
-            chck = 4*60
-            break;        
-        case "5":
-            chck = 5*60
-            break;        
-        case "10":
-            chck = 10*60
-            break;        
-        case "15":
-            chck = 15*60
-            break;        
-        case "30":
-            chck = 30*60
-            break;        
-        case "60":
-            chck = 60*60
-            break;
-        default:
-            chck = 24*60*60        
-    }
-    sendEvent(name: "checkInterval", value: chck, displayed: false, data: [protocol: "zwave", hubHardwareId: device.hub.hardwareID])
-	unschedule(ping)	
+	unschedule(poll)	
 }
 
-def ping() { 
-	def cmds = []
-	def tmpE = Temperatureeinheit=="1" ? 1 : 0
+def poll() { 	
+    def cmds = []
+def tmpE = Temperatureeinheit=="1" ? 1 : 0
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     	//get temperature
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	    //get humidity
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    //get carbon dioxide
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)			//get voc
 	secureSequence (cmds)
-}
-
-def poll() { //total unklar was Polling macht!!!
-	/*def cmds = []
-	def tmpE = Temperatureeinheit=="1" ? 1 : 0
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     	//get temperature
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	    //get humidity
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    //get carbon dioxide
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)			//get voc
-	secureSequence (cmds)*/
 }
