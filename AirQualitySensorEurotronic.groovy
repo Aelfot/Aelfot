@@ -1,15 +1,16 @@
 //to do assoziation!
 //version 0.88
+//checkintervall überflüssig, machen Sie liber durch Rule-Machine Poll
 
 import hubitat.device.HubAction
 import hubitat.device.Protocol
 
 metadata {
 	definition(name: "Luftgutesensor Eurotronic", namespace: "forgetiger55122", author: "Ravil Rubashkin", mnmn:"SmartThingsCommunity", vid:"e1fa8d53-5d1a-3d14-9329-fa156189e663" ) { //"9b37cdaf-0cdb-3643-94cf-867460ea67e6" "e1fa8d53-5d1a-3d14-9329-fa156189e663"
-	    capability "CarbonDioxideMeasurement"
+	capability "CarbonDioxideMeasurement"
         capability "Temperature Measurement"
-		capability "Relative Humidity Measurement"
-		capability "Sensor"
+	capability "Relative Humidity Measurement"
+	capability "Sensor"
         capability "Configuration"
         capability "TamperAlert"
         capability "Polling"
@@ -21,7 +22,7 @@ metadata {
         attribute "VOC Niveau", "enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]               //Interpretation
         attribute "CO2 Niveau", "enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]               //Interpretation
         
-		fingerprint mfr:"0148", prod:"0005", model:"0001"        
+	fingerprint mfr:"0148", prod:"0005", model:"0001"        
         }	
 	
     def tempReportRates = [:]
@@ -94,16 +95,6 @@ metadata {
         ledIndikator << ["0":"Led aus"] //0x00
         ledIndikator << ["1":"Led ein"] //0x01
 
-    def checkIntervals = [:]
-        checkIntervals << ["1"  :"Abfrage jede Minute"]
-        checkIntervals << ["5"  :"Abfrage alle 5 Minuten"]
-        checkIntervals << ["10" :"Abfrage alle 10 Minuten"]
-        checkIntervals << ["15" :"Abfrage alle 15 Minuten"]
-        checkIntervals << ["30" :"Abfrage alle 30 Minuten"]
-        checkIntervals << ["60" :"Abfrage stündlich"]
-		checkIntervals << ["180":"Abfrage alle 3 Stunden"]
-
-   
     preferences {
         input "Temperaturdifferenz",     "enum", title: "Temperatur on Change Reporting", 	options: tempReportRates, 	description: "Default: 0.5°C", 							required: false, displayDuringSetup: true
         input "Feuchtigkeitsdifferenz",  "enum", title: "Feuchtigkeit on Change Reporting",	options: humReportRates, 	description: "Default: 5%", 							required: false, displayDuringSetup: true
@@ -113,49 +104,24 @@ metadata {
         input "VOCChageReporting",       "enum", title: "VOC-on Change Reporting", 			options: vocChangeReport, 	description: "Default: 0.5 ppm", 						required: false, displayDuringSetup: true
         input "CO2ChangeReporting",      "enum", title: "CO2 Change Reporting", 			options: co2ChangeReport, 	description: "Default: 500 ppm", 						required: false, displayDuringSetup: true
         input "LedIndikation",           "enum", title: "Luftgüte per LED signalisieren", 	options: ledIndikator, 		description: "Default: Luftgüte per Led signalisieren", required: false, displayDuringSetup: true   
-		//input "Checking",                "enum", title: "Check Interval",                   options: checkIntervals,    description: "Default: Keine Prüfung",                  required: false, displayDuringSetup: true
-    }
-
+	}
 }
 
 def installed() {
-    /*switch (Checking) {        
-        case "1":
-            runEvery1Minute(poll)
-            break;        
-        case "5":
-            runEvery5Minutes(poll)
-            break;        
-        case "10":
-            runEvery10Minutes(poll)
-            break;        
-        case "15":
-            runEvery15Minutes(poll)
-            break;        
-        case "30":
-            runEvery30Minutes(poll)
-            break;
-		case "60":
-			runEvery1Hour(poll)
-			break;
-		case "180":
-			runEvery3Hours(poll)
-			break;
-    }*/
-    sendEvent(name: "tamper", value: "clear", displayed: false)
+	sendEvent(name: "tamper", value: "clear", displayed: false)
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
 	response([
 		secureSequence(zwave.notificationV8.notificationGet(notificationType: 0x0D)), 	                  // Home Health
 		"delay 500",
 		secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x01, scale: tmpE)),     // temperature
 		"delay 500",
-        secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x05, scale: 0)),        // humidity
+        	secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x05, scale: 0)),        // humidity
 		"delay 500",
 		secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x0B, scale: tmpE)),     // dewpoint
 		"delay 500",
-        secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x11, scale: 0)),        // CO2
+        	secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x11, scale: 0)),        // CO2
 		"delay 500",
-        secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x27, scale: 1)),        // VOC
+        	secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x27, scale: 1)),        // VOC
 	])     
 }
 
@@ -177,12 +143,12 @@ def zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNot
 }
 
 def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) { 
-    state.sec = 1
+	state.sec = 1
 	def encapsulatedCommand = cmd.encapsulatedCommand ([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x04,0x86:0x12]) 
 	if (encapsulatedCommand) {
 		return zwaveEvent(encapsulatedCommand)
 	} else {
-    	createEvent(descriptionText: cmd.toString())
+    		createEvent(descriptionText: cmd.toString())
 	}
 }
 
@@ -239,17 +205,17 @@ def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
     if (cmd.notificationType == 0x0D) {
         switch (cmd.event) {
 		case 0x01:
-            vocNotifity (1)
-            break;
+            		vocNotifity (1)
+            		break;
 		case 0x02:
-            vocNotifity (2)
-            break;
+            		vocNotifity (2)
+            		break;
 		case 0x03:
-            vocNotifity (3)
-            break;
-        case 0x04:
-            vocNotifity (4)
-            break;         
+            		vocNotifity (3)
+           		break;
+        	case 0x04:
+            		vocNotifity (4)
+            		break;         
         }
     }
 }
