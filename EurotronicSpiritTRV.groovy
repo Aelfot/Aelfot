@@ -1,14 +1,23 @@
 /*
 ACHTUNG!! 
-    Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
-    Lediglich ThermostatSetPointV2 von Hubitat unterstützt. Keine Nachteile.
-    Lediglich SecurityV1 von Hubitat unterstützt.
-    ZWavePlusInfoV2 in Hubitat.
-    //Temperatur extern bereitgestellt handeln
+	Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
+	Lediglich ThermostatSetPointV2 von Hubitat unterstützt. Keine Nachteile.
+	Lediglich SecurityV1 von Hubitat unterstützt.
+	ZWavePlusInfoV2 in Hubitat.
+    
+Bedienung!
+	auto => heat
+	cool => energy save heat
+	off => off
+	emergency heat => full power
+	heat => manufacturer specific
 
-firmware update metadata v3
-power level v1
-transport service v2 u
+ToDo!
+	Externe Temperaturmessung: Assotiation 
+
+	firmware update metadata v3: macht Sinn??? Wo Firmware??
+	power level v1: wozu mit Testfallen spielen??? keine Zeit dafür momentan
+	transport service v2 u: soll es sein???
 */
 
 
@@ -124,13 +133,56 @@ metadata {
 
 	def valveReportRates = [:] 
 		valveReportRates << ["0"  : "Deaktiviert"]										//0x00
-		valveReportRates << ["1"  : "Report 1% valve movement"]									//0x01
-		valveReportRates << ["2"  : "Report 2% valve movement"]									//0x02
-		valveReportRates << ["5"  : "Report 5% valve movement"]									//0x32
-		valveReportRates << ["10" : "Report 10% valve movement"]								//0x0A
-		valveReportRates << ["20" : "Report 20% valve movement"]								//0x14
-		valveReportRates << ["30" : "Report 30% valve movement"]								//0x1E
-		valveReportRates << ["50" : "Report 50% valve movement"]								//0x32
+		valveReportRates << ["1"  : "Ventilöffnungsgrad bei Delta von 1% melden"]						//0x01
+		valveReportRates << ["2"  : "Ventilöffnungsgrad bei Delta von 2% melden"]						//0x02
+		valveReportRates << ["3"  : "Ventilöffnungsgrad bei Delta von 3% melden"]						//0x03
+		valveReportRates << ["4"  : "Ventilöffnungsgrad bei Delta von 4% melden"]						//0x04
+		valveReportRates << ["5"  : "Ventilöffnungsgrad bei Delta von 5% melden"]						//0x05
+		valveReportRates << ["6"  : "Ventilöffnungsgrad bei Delta von 6% melden"]						//0x06
+		valveReportRates << ["7"  : "Ventilöffnungsgrad bei Delta von 7% melden"]						//0x07
+		valveReportRates << ["8"  : "Ventilöffnungsgrad bei Delta von 8% melden"]						//0x08
+		valveReportRates << ["9"  : "Ventilöffnungsgrad bei Delta von 9% melden"]						//0x09
+		valveReportRates << ["10" : "Ventilöffnungsgrad bei Delta von 10% melden"]						//0x0A
+		valveReportRates << ["11" : "Ventilöffnungsgrad bei Delta von 11% melden"]						//0x0B
+		valveReportRates << ["12" : "Ventilöffnungsgrad bei Delta von 12% melden"]						//0x0C
+		valveReportRates << ["13" : "Ventilöffnungsgrad bei Delta von 13% melden"]						//0x0D
+		valveReportRates << ["14" : "Ventilöffnungsgrad bei Delta von 14% melden"]						//0x0E
+		valveReportRates << ["15" : "Ventilöffnungsgrad bei Delta von 15% melden"]						//0x0F
+		valveReportRates << ["16" : "Ventilöffnungsgrad bei Delta von 16% melden"]						//0x10
+		valveReportRates << ["17" : "Ventilöffnungsgrad bei Delta von 17% melden"]						//0x11
+		valveReportRates << ["18" : "Ventilöffnungsgrad bei Delta von 18% melden"]						//0x12
+		valveReportRates << ["19" : "Ventilöffnungsgrad bei Delta von 19% melden"]						//0x13
+		valveReportRates << ["20" : "Ventilöffnungsgrad bei Delta von 20% melden"]						//0x14
+		valveReportRates << ["21" : "Ventilöffnungsgrad bei Delta von 21% melden"]						//0x15
+		valveReportRates << ["22" : "Ventilöffnungsgrad bei Delta von 22% melden"]						//0x16
+		valveReportRates << ["23" : "Ventilöffnungsgrad bei Delta von 23% melden"]						//0x17
+		valveReportRates << ["24" : "Ventilöffnungsgrad bei Delta von 24% melden"]						//0x18
+		valveReportRates << ["25" : "Ventilöffnungsgrad bei Delta von 25% melden"]						//0x19
+		valveReportRates << ["26" : "Ventilöffnungsgrad bei Delta von 26% melden"]						//0x1A
+		valveReportRates << ["27" : "Ventilöffnungsgrad bei Delta von 27% melden"]						//0x1B
+		valveReportRates << ["28" : "Ventilöffnungsgrad bei Delta von 28% melden"]						//0x1C
+		valveReportRates << ["29" : "Ventilöffnungsgrad bei Delta von 29% melden"]						//0x1D
+		valveReportRates << ["30" : "Ventilöffnungsgrad bei Delta von 30% melden"]						//0x1E
+		valveReportRates << ["31" : "Ventilöffnungsgrad bei Delta von 31% melden"]						//0x1F
+		valveReportRates << ["32" : "Ventilöffnungsgrad bei Delta von 32% melden"]						//0x20
+		valveReportRates << ["33" : "Ventilöffnungsgrad bei Delta von 33% melden"]						//0x21
+		valveReportRates << ["34" : "Ventilöffnungsgrad bei Delta von 34% melden"]						//0x22
+		valveReportRates << ["35" : "Ventilöffnungsgrad bei Delta von 35% melden"]						//0x23
+		valveReportRates << ["36" : "Ventilöffnungsgrad bei Delta von 36% melden"]						//0x24
+		valveReportRates << ["37" : "Ventilöffnungsgrad bei Delta von 37% melden"]						//0x25
+		valveReportRates << ["38" : "Ventilöffnungsgrad bei Delta von 38% melden"]						//0x26
+		valveReportRates << ["39" : "Ventilöffnungsgrad bei Delta von 39% melden"]						//0x27
+		valveReportRates << ["40" : "Ventilöffnungsgrad bei Delta von 40% melden"]						//0x28
+		valveReportRates << ["41" : "Ventilöffnungsgrad bei Delta von 41% melden"]						//0x29
+		valveReportRates << ["42" : "Ventilöffnungsgrad bei Delta von 42% melden"]						//0x2A
+		valveReportRates << ["43" : "Ventilöffnungsgrad bei Delta von 43% melden"]						//0x2B
+		valveReportRates << ["44" : "Ventilöffnungsgrad bei Delta von 44% melden"]						//0x2C
+		valveReportRates << ["45" : "Ventilöffnungsgrad bei Delta von 45% melden"]						//0x2D
+		valveReportRates << ["46" : "Ventilöffnungsgrad bei Delta von 46% melden"]						//0x2E
+		valveReportRates << ["47" : "Ventilöffnungsgrad bei Delta von 47% melden"]						//0x2F
+		valveReportRates << ["48" : "Ventilöffnungsgrad bei Delta von 48% melden"]						//0x30
+		valveReportRates << ["49" : "Ventilöffnungsgrad bei Delta von 49% melden"]						//0x31
+		valveReportRates << ["50" : "Ventilöffnungsgrad bei Delta von 50% melden"]						//0x32
     
 	def windowDetectOptions = [:]
 		windowDetectOptions << ["0" : "Deaktiviert"] 										//0x00
@@ -278,6 +330,7 @@ def secureSequence(commands, delay=1500) {
 }
 
 installed () {
+	state.abfrage = 1
 	def cmd = []
 	cmd << zwave.associationV2.associationGet()					//0x85:0x02
 	cmd << zwave.associationV2.associationGroupingsGet()				//0x85:0x05
