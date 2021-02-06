@@ -1,5 +1,5 @@
 /*
-Version 1.01
+Version 1.02
 
 ACHTUNG!! 
 	Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
@@ -555,6 +555,7 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport 
 }
 
 def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
+	log.info "SwitchMultilevelReport Valve ist bei ${cmd.value}"
 	createEvent(name:"level", value: cmd.value, unit:"%", displayed: true)
 }
     
@@ -704,9 +705,7 @@ def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 			default:
 				zWaveLibraryTypeDesc = "N/A"
 		}
-		def applicationVersionDisp = String.format("%d.%02d",cmd.applicationVersion,cmd.applicationSubVersion)
 		def zWaveProtocolVersionDisp = String.format("%d.%02d",cmd.zWaveProtocolVersion,cmd.zWaveProtocolSubVersion)
-		sendEvent([name: "applicationVersion", value:  applicationVersionDisp])
 		sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
 	}
 
@@ -830,24 +829,52 @@ def setHeatingSetpoint(degrees){
 }
 
 def setThermostatMode(String){
+	def cmds = []    		
 	switch (String) {
 		case "heat":
-			heat()
+			state.thermostatMode = "heat"
+			sendEvent(name: "thermostatMode", value: "heat", displayed: true)
+			sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
+			cmds << zwave.basicV1.basicSet(value: 0xFE)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
 		case "emergency heat":
-			emergencyHeat()
+			state.thermostatMode = "emergency heat"
+			sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0F)
+			cmds << zwave.basicV1.basicSet(value: 0xF0)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
 		case "cool":
-			cool()
+			state.thermostatMode = "cool"
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
+			cmds << zwave.basicV1.basicSet(value: 0x00)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
+			cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
 			break;
 		case "auto":
-        	auto()
-        	break;
+        	state.thermostatMode = "auto"
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
+			cmds << zwave.basicV1.basicSet(value: 0xFF)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
+			cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
+			break;
         case "off":
-			off()
+			state.thermostatMode = "off"
+			sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0)
+			cmds << zwave.basicV1.basicSet(value: 0x0F)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
 	}
-	log.debug "Executing 'setThermostatMode' '$nextMode'"
+	log.debug "setThermostatMode wird ${String} genommen"
+	secureSequence (cmds)        	
 }
 
 def setLevel(nextLevel) {
