@@ -1,5 +1,5 @@
 /*
-Version 1.03
+Version 1.04
 
 ACHTUNG!! 
 	Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
@@ -805,7 +805,7 @@ def zwaveEvent(hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport cmd) {
 	def map = [ value: cmd.scaledSensorValue.toString(), displayed: true, name: "temperature", unit: "°C"]
 	state.temperature = cmd.scaledSensorValue
-	def gewuenscht = state.thermostatMode == "auto" ? state.heatingSetpoint : state.coolingSetpoint 
+	def gewuenscht = state.thermostatMode == "heat" ? state.heatingSetpoint : state.coolingSetpoint 
 	if ((state.temperature < gewuenscht) && (state.thermostatMode != "manual") && (state.thermostatMode != "off") && (state.thermostatMode != "emergency heat" )) {
 		sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
 	} else {
@@ -861,7 +861,6 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedRe
 	supportedModes << "cool" 
 	supportedModes << "emergency heat" 
 	supportedModes << "manual"
-	supportedModes << "auto"
 	state.supportedModes = supportedModes 
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
 	sendEvent(name: "supportedThermostatFanModes", value: ["auto"], displayed: false)
@@ -882,11 +881,11 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedRe
 	     //static Short SETPOINT_TYPE_HEATING_1 = 1
 		def event = []
 		if (cmd.setpointType == 1) { 
-			event << createEvent(name: "heatingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)
+			event << createEvent(name: "heatingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)			
 			state.heatingSetpoint = cmd.scaledValue
 		}
 		if (cmd.setpointType == 11) { 
-			event << createEvent(name: "coolingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)
+			event << createEvent(name: "coolingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)			
 			state.coolingSetpoint = cmd.scaledValue
 		}
 		log.info "ThermostatSetpointReport ${cmd}"
@@ -988,6 +987,7 @@ def unlock(){
 def heat(){
 	def cmds = []
     state.thermostatMode = "heat"
+	sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: getTemperatureScale(), displayed: true)
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 	cmds << zwave.basicV1.basicSet(value: 0xFF)
 	cmds << zwave.basicV1.basicGet()
@@ -999,6 +999,7 @@ def heat(){
 def cool(){
 	def cmds = []
     state.thermostatMode = "cool"
+	sendEvent(name: "thermostatSetpoint", value: state.coolingSetpoint, unit: getTemperatureScale(), displayed: true)
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
 	cmds << zwave.basicV1.basicSet(value: 0x00)
 	cmds << zwave.basicV1.basicGet()
@@ -1056,6 +1057,7 @@ def auto() {
 
 def setCoolingSetpoint(degrees){
 	def cmds = []
+	if (state.thermostatMode == "cool") {sendEvent(name: "thermostatSetpoint", value: degrees, unit: getTemperatureScale(), displayed: true)}
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 11)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 11)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
@@ -1064,6 +1066,7 @@ def setCoolingSetpoint(degrees){
 
 def setHeatingSetpoint(degrees){
 	def cmds = []
+	if (state.thermostatMode == "heat") {sendEvent(name: "thermostatSetpoint", value: degrees, unit: getTemperatureScale(), displayed: true)}
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 1)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
@@ -1091,6 +1094,7 @@ def setThermostatMode(String){
 			break;
 		case "cool":
 			state.thermostatMode = "cool"
+			sendEvent(name: "thermostatSetpoint", value: state.coolingSetpoint, unit: getTemperatureScale(), displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
 			cmds << zwave.basicV1.basicSet(value: 0x00)
 			cmds << zwave.basicV1.basicGet()
@@ -1099,6 +1103,7 @@ def setThermostatMode(String){
 			break;
 		case "heat":
         	state.thermostatMode = "heat"
+			sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: getTemperatureScale(), displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 			cmds << zwave.basicV1.basicSet(value: 0xFF)
 			cmds << zwave.basicV1.basicGet()
@@ -1110,14 +1115,6 @@ def setThermostatMode(String){
 			sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0)
 			cmds << zwave.basicV1.basicSet(value: 0x0F)
-			cmds << zwave.basicV1.basicGet()
-			cmds << zwave.thermostatModeV2.thermostatModeGet()
-			break;
-        case "auto":
-            state.thermostatMode = "manual"
-			sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
-			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
-			cmds << zwave.basicV1.basicSet(value: 0xFE)
 			cmds << zwave.basicV1.basicGet()
 			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
