@@ -1,5 +1,5 @@
 /*
-Version 1.04
+Version 1.05
 
 ACHTUNG!! 
 	Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
@@ -1252,6 +1252,7 @@ def configure() {
 	def valveReportL 		= stringToHexList (valveReport)
 	def windowOpenL 		= stringToHexList (windowOpen)
 	def tempOffsetL 		= stringToHexList (tempOffset)
+	log.debug "Configure tempOffset ${tempOffset}"
 	def cmds = []
 	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDinvertL,		parameterNumber:1, size:1, scaledConfigurationValue: LCDinvertL.get(0))
 	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeoutL,		parameterNumber:2, size:1, scaledConfigurationValue: LCDtimeoutL.get(0))
