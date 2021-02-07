@@ -1,5 +1,5 @@
 /*
-Version 1.02
+Version 1.03
 
 ACHTUNG!! 
 	Lediglich ThermostatModeV2 von Hubitat unterstützt. Es fehlen Modi: Manufacturer Specific und Full Power
@@ -295,7 +295,8 @@ metadata {
 		tempOffset << ["48"  : "Temperaturkorrektur um 4.8°C"]											//0x30
 		tempOffset << ["49"  : "Temperaturkorrektur um 4.9°C"]											//0x31
 		tempOffset << ["50"  : "Temperaturkorrektur um 5.0°C"]											//0x32
-//		tempOffset << ["128" : "Temperatur wird extern bereitgestellt"]									//0x80
+		tempOffset << ["128" : "Temperatur wird extern bereitgestellt"]									//0x80
+    
 	preferences {
 		input "LCDinvert",        "enum", title: "Display invertieren?",               options: LCDinvertOptions,    description: "Default: Nein",                    required: false, displayDuringSetup: true
 		input "LCDtimeout",       "enum", title: "Display ausschalten?",               options: LCDtimeoutOptions,   description: "Default: Immer an",                required: false, displayDuringSetup: true
@@ -358,7 +359,7 @@ def initialize() {
 	cmd << zwave.sensorMultiLevelV3.sensorMultilevelGet()				//0x31:0x04
 	cmd << zwave.switchMultiLevelV1.switchMultilevelGet()				//0x26:0x02
 	cmd << zwave.thermostatModeV2.thermostatModeGet()					//0x40:0x02
-	cmd << zwave.thermostatModeV2.thermostatModeSupportedGet()			//0x40:0x04
+	cmd << zwave.thermostatModeV2.thermostatModeSupportedGet()			//0x40:0x04	Problematisch, Thermostat unterstützt nur V3-Version, hier keine Antwort
 	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:11)	//0x43:0x02
 	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:1)		//0x43:0x02
 	cmd << zwave.securityV1.securityCommandsSupportedGet()				//0x98:0x02
@@ -418,7 +419,7 @@ def initialize() {
 def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd) {
 	def event = [ ]
 	if (cmd.value == 0xFF) {
-		state.thermostatMode = "auto" 				//es ist "heat"
+		state.thermostatMode = "heat" 				//es ist "heat"
 	}
 	if (cmd.value == 0xF0) {
 		state.thermostatMode = "emergency heat" 	//es ist "full power"
@@ -430,7 +431,7 @@ def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd) {
 		state.thermostatMode = "off"				//ist doch klar, oder?
 	}
 	if (cmd.value == 0xFE) { 
-		state.thermostatMode = "heat"				//es ist "manufacturer specific"
+		state.thermostatMode = "manual"				//es ist "manufacturer specific"
 	}
 	event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
 	log.info "Basic Report : ${cmd}, ${state.thermostatMode}"
@@ -442,31 +443,291 @@ def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
 	createEvent(name: "battery", unit:"%", value: cmd.batteryLevel, isStateChange: true)
 }
 
-def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
+def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {	
 	switch (cmd.parameterNumber) {
 		case 1: 
-			log.info "Config Param 1 - ${cmd.scaledConfigurationValue}"
+			def LCDinvertOptions = [:]
+				LCDinvertOptions << ["0" : "Ja"]																
+				LCDinvertOptions << ["1" : "Nein"]																
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "LCD Invertieren - ${LCDinvertOptions[msg]}"
 			break;
 		case 2: 
-			log.info "Config Param 2 - ${cmd.scaledConfigurationValue}"
+			def LCDtimeoutOptions = [:]
+				LCDtimeoutOptions << ["0"  : "Immer an"]														//0x00
+				LCDtimeoutOptions << ["1"  : "1 Secunde"]														//0x01
+				LCDtimeoutOptions << ["2"  : "2 Secunden"]														//0x02
+				LCDtimeoutOptions << ["3"  : "3 Secunden"]														//0x03
+				LCDtimeoutOptions << ["4"  : "4 Secunden"]														//0x04
+				LCDtimeoutOptions << ["6"  : "6 Secunden"]														//0x06
+				LCDtimeoutOptions << ["7"  : "7 Secunden"]														//0x07
+				LCDtimeoutOptions << ["8"  : "8 Secunden"]														//0x08
+				LCDtimeoutOptions << ["9"  : "9 Secunden"]														//0x09
+				LCDtimeoutOptions << ["10" : "10 Secunden"]														//0x0A
+				LCDtimeoutOptions << ["11" : "11 Secunden"]														//0x0B
+				LCDtimeoutOptions << ["12" : "12 Secunden"]														//0x0C
+				LCDtimeoutOptions << ["13" : "13 Secunden"]														//0x0D
+				LCDtimeoutOptions << ["14" : "14 Secunden"]														//0x0E
+				LCDtimeoutOptions << ["15" : "15 Secunden"]														//0x0F
+				LCDtimeoutOptions << ["16" : "16 Secunden"]														//0x10
+				LCDtimeoutOptions << ["17" : "17 Secunden"]														//0x11
+				LCDtimeoutOptions << ["18" : "18 Secunden"]														//0x12
+				LCDtimeoutOptions << ["19" : "19 Secunden"]														//0x13
+				LCDtimeoutOptions << ["20" : "20 Secunden"]														//0x14
+				LCDtimeoutOptions << ["21" : "21 Secunden"]														//0x15
+				LCDtimeoutOptions << ["22" : "22 Secunden"]														//0x16
+				LCDtimeoutOptions << ["23" : "23 Secunden"]														//0x17
+				LCDtimeoutOptions << ["24" : "24 Secunden"]														//0x18
+				LCDtimeoutOptions << ["25" : "25 Secunden"]														//0x19
+				LCDtimeoutOptions << ["26" : "26 Secunden"]														//0x1A
+				LCDtimeoutOptions << ["27" : "27 Secunden"]														//0x1B
+				LCDtimeoutOptions << ["28" : "28 Secunden"]														//0x1C
+				LCDtimeoutOptions << ["29" : "29 Secunden"]														//0x1D
+				LCDtimeoutOptions << ["30" : "20 Secunden"]														//0x1E
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "LCD Timeout - ${LCDtimeoutOptions[msg]}"
 			break;
 		case 3: 
-			log.info "Config Param 3 - ${cmd.scaledConfigurationValue}"
+			def backlightOptions = [:]
+				backlightOptions << ["0" : "An"]																//0x00
+				backlightOptions << ["1" : "Aus"]																//0x01	
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Hintergrundbeleuchtung - ${backlightOptions[msg]}"
 			break;
 		case 4: 
-			log.info "Config Param 4 - ${cmd.scaledConfigurationValue}"
+			def batteryNotOptions = [:]
+				batteryNotOptions << ["0" : "Eventgesteuert"]													//0x00
+				batteryNotOptions << ["1" : "1 Mal täglich"]													//0x01
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Batteriestatus senden - ${batteryNotOptions[msg]}"
 			break;
 		case 5: 
-			log.info "Config Param 5 - ${cmd.scaledConfigurationValue}"
+			def tempReportRates = [:]
+				tempReportRates << ["0"  : "Temperatur nicht automatisch senden"] 								//0x00
+				tempReportRates << ["1"  : "Temperatur senden bei Differenz von 0.1°C"]							//0x01
+				tempReportRates << ["2"  : "Temperatur senden bei Differenz von 0.2°C"]							//0x02
+				tempReportRates << ["3"  : "Temperatur senden bei Differenz von 0.3°C"] 						//0x03
+				tempReportRates << ["4"  : "Temperatur senden bei Differenz von 0.4°C"] 						//0x04
+				tempReportRates << ["5"  : "Temperatur senden bei Differenz von 0.5°C"] 						//0x05
+				tempReportRates << ["6"  : "Temperatur senden bei Differenz von 0.6°C"] 						//0x06
+				tempReportRates << ["7"  : "Temperatur senden bei Differenz von 0.7°C"] 						//0x07
+				tempReportRates << ["8"  : "Temperatur senden bei Differenz von 0.8°C"] 						//0x08
+				tempReportRates << ["9"  : "Temperatur senden bei Differenz von 0.9°C"] 						//0x09
+				tempReportRates << ["10" : "Temperatur senden bei Differenz von 1.0°C"] 						//0x0A
+				tempReportRates << ["11" : "Temperatur senden bei Differenz von 1.1°C"] 						//0x0B
+				tempReportRates << ["12" : "Temperatur senden bei Differenz von 1.2°C"] 						//0x0C
+				tempReportRates << ["13" : "Temperatur senden bei Differenz von 1.3°C"] 						//0x0D
+				tempReportRates << ["14" : "Temperatur senden bei Differenz von 1.4°C"] 						//0x0E
+				tempReportRates << ["15" : "Temperatur senden bei Differenz von 1.5°C"] 						//0x0F
+				tempReportRates << ["16" : "Temperatur senden bei Differenz von 1.6°C"] 						//0x10
+				tempReportRates << ["17" : "Temperatur senden bei Differenz von 1.7°C"] 						//0x11
+				tempReportRates << ["18" : "Temperatur senden bei Differenz von 1.8°C"] 						//0x12
+				tempReportRates << ["19" : "Temperatur senden bei Differenz von 1.9°C"] 						//0x13
+				tempReportRates << ["20" : "Temperatur senden bei Differenz von 2.0°C"] 						//0x14
+				tempReportRates << ["21" : "Temperatur senden bei Differenz von 2.1°C"] 						//0x15
+				tempReportRates << ["22" : "Temperatur senden bei Differenz von 2.2°C"] 						//0x16
+				tempReportRates << ["23" : "Temperatur senden bei Differenz von 2.3°C"] 						//0x17
+				tempReportRates << ["24" : "Temperatur senden bei Differenz von 2.4°C"] 						//0x18
+				tempReportRates << ["25" : "Temperatur senden bei Differenz von 2.5°C"] 						//0x19
+				tempReportRates << ["26" : "Temperatur senden bei Differenz von 2.6°C"] 						//0x1A
+				tempReportRates << ["27" : "Temperatur senden bei Differenz von 2.7°C"] 						//0x1B
+				tempReportRates << ["28" : "Temperatur senden bei Differenz von 2.8°C"] 						//0x1C
+				tempReportRates << ["29" : "Temperatur senden bei Differenz von 2.9°C"] 						//0x1D
+				tempReportRates << ["30" : "Temperatur senden bei Differenz von 3.0°C"] 						//0x1E
+				tempReportRates << ["31" : "Temperatur senden bei Differenz von 3.1°C"] 						//0x1F
+				tempReportRates << ["32" : "Temperatur senden bei Differenz von 3.2°C"] 						//0x20
+				tempReportRates << ["33" : "Temperatur senden bei Differenz von 3.3°C"] 						//0x21
+				tempReportRates << ["34" : "Temperatur senden bei Differenz von 3.4°C"] 						//0x22
+				tempReportRates << ["35" : "Temperatur senden bei Differenz von 3.5°C"] 						//0x23
+				tempReportRates << ["36" : "Temperatur senden bei Differenz von 3.6°C"] 						//0x24
+				tempReportRates << ["37" : "Temperatur senden bei Differenz von 3.7°C"] 						//0x25
+				tempReportRates << ["38" : "Temperatur senden bei Differenz von 3.8°C"] 						//0x26
+				tempReportRates << ["39" : "Temperatur senden bei Differenz von 3.9°C"] 						//0x27
+				tempReportRates << ["40" : "Temperatur senden bei Differenz von 4.0°C"] 						//0x28
+				tempReportRates << ["41" : "Temperatur senden bei Differenz von 4.1°C"] 						//0x29
+				tempReportRates << ["42" : "Temperatur senden bei Differenz von 4.2°C"] 						//0x2A
+				tempReportRates << ["43" : "Temperatur senden bei Differenz von 4.3°C"] 						//0x2B
+				tempReportRates << ["44" : "Temperatur senden bei Differenz von 4.4°C"] 						//0x2C
+				tempReportRates << ["45" : "Temperatur senden bei Differenz von 4.5°C"] 						//0x2D
+				tempReportRates << ["46" : "Temperatur senden bei Differenz von 4.6°C"] 						//0x2E
+				tempReportRates << ["47" : "Temperatur senden bei Differenz von 4.7°C"] 						//0x2F
+				tempReportRates << ["48" : "Temperatur senden bei Differenz von 4.8°C"] 						//0x30
+				tempReportRates << ["49" : "Temperatur senden bei Differenz von 4.9°C"] 						//0x31
+				tempReportRates << ["50" : "Temperatur senden bei Differenz von 5.0°C"] 						//0x32	
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Aktuelle ${tempReportRates[msg]}"
 			break;
-		case 6: 
-			log.info "Config Param 6 - ${cmd.scaledConfigurationValue}"
+		case 6:
+			def valveReportRates = [:] 
+				valveReportRates << ["0"  : "Deaktiviert"]														//0x00
+				valveReportRates << ["1"  : "Ventilöffnungsgrad bei Delta von 1% melden"]						//0x01
+				valveReportRates << ["2"  : "Ventilöffnungsgrad bei Delta von 2% melden"]						//0x02
+				valveReportRates << ["3"  : "Ventilöffnungsgrad bei Delta von 3% melden"]						//0x03
+				valveReportRates << ["4"  : "Ventilöffnungsgrad bei Delta von 4% melden"]						//0x04
+				valveReportRates << ["5"  : "Ventilöffnungsgrad bei Delta von 5% melden"]						//0x05
+				valveReportRates << ["6"  : "Ventilöffnungsgrad bei Delta von 6% melden"]						//0x06
+				valveReportRates << ["7"  : "Ventilöffnungsgrad bei Delta von 7% melden"]						//0x07
+				valveReportRates << ["8"  : "Ventilöffnungsgrad bei Delta von 8% melden"]						//0x08
+				valveReportRates << ["9"  : "Ventilöffnungsgrad bei Delta von 9% melden"]						//0x09
+				valveReportRates << ["10" : "Ventilöffnungsgrad bei Delta von 10% melden"]						//0x0A
+				valveReportRates << ["11" : "Ventilöffnungsgrad bei Delta von 11% melden"]						//0x0B
+				valveReportRates << ["12" : "Ventilöffnungsgrad bei Delta von 12% melden"]						//0x0C
+				valveReportRates << ["13" : "Ventilöffnungsgrad bei Delta von 13% melden"]						//0x0D
+				valveReportRates << ["14" : "Ventilöffnungsgrad bei Delta von 14% melden"]						//0x0E
+				valveReportRates << ["15" : "Ventilöffnungsgrad bei Delta von 15% melden"]						//0x0F
+				valveReportRates << ["16" : "Ventilöffnungsgrad bei Delta von 16% melden"]						//0x10
+				valveReportRates << ["17" : "Ventilöffnungsgrad bei Delta von 17% melden"]						//0x11
+				valveReportRates << ["18" : "Ventilöffnungsgrad bei Delta von 18% melden"]						//0x12
+				valveReportRates << ["19" : "Ventilöffnungsgrad bei Delta von 19% melden"]						//0x13
+				valveReportRates << ["20" : "Ventilöffnungsgrad bei Delta von 20% melden"]						//0x14
+				valveReportRates << ["21" : "Ventilöffnungsgrad bei Delta von 21% melden"]						//0x15
+				valveReportRates << ["22" : "Ventilöffnungsgrad bei Delta von 22% melden"]						//0x16
+				valveReportRates << ["23" : "Ventilöffnungsgrad bei Delta von 23% melden"]						//0x17
+				valveReportRates << ["24" : "Ventilöffnungsgrad bei Delta von 24% melden"]						//0x18
+				valveReportRates << ["25" : "Ventilöffnungsgrad bei Delta von 25% melden"]						//0x19
+				valveReportRates << ["26" : "Ventilöffnungsgrad bei Delta von 26% melden"]						//0x1A
+				valveReportRates << ["27" : "Ventilöffnungsgrad bei Delta von 27% melden"]						//0x1B
+				valveReportRates << ["28" : "Ventilöffnungsgrad bei Delta von 28% melden"]						//0x1C
+				valveReportRates << ["29" : "Ventilöffnungsgrad bei Delta von 29% melden"]						//0x1D
+				valveReportRates << ["30" : "Ventilöffnungsgrad bei Delta von 30% melden"]						//0x1E
+				valveReportRates << ["31" : "Ventilöffnungsgrad bei Delta von 31% melden"]						//0x1F
+				valveReportRates << ["32" : "Ventilöffnungsgrad bei Delta von 32% melden"]						//0x20
+				valveReportRates << ["33" : "Ventilöffnungsgrad bei Delta von 33% melden"]						//0x21
+				valveReportRates << ["34" : "Ventilöffnungsgrad bei Delta von 34% melden"]						//0x22
+				valveReportRates << ["35" : "Ventilöffnungsgrad bei Delta von 35% melden"]						//0x23
+				valveReportRates << ["36" : "Ventilöffnungsgrad bei Delta von 36% melden"]						//0x24
+				valveReportRates << ["37" : "Ventilöffnungsgrad bei Delta von 37% melden"]						//0x25
+				valveReportRates << ["38" : "Ventilöffnungsgrad bei Delta von 38% melden"]						//0x26
+				valveReportRates << ["39" : "Ventilöffnungsgrad bei Delta von 39% melden"]						//0x27
+				valveReportRates << ["40" : "Ventilöffnungsgrad bei Delta von 40% melden"]						//0x28
+				valveReportRates << ["41" : "Ventilöffnungsgrad bei Delta von 41% melden"]						//0x29
+				valveReportRates << ["42" : "Ventilöffnungsgrad bei Delta von 42% melden"]						//0x2A
+				valveReportRates << ["43" : "Ventilöffnungsgrad bei Delta von 43% melden"]						//0x2B
+				valveReportRates << ["44" : "Ventilöffnungsgrad bei Delta von 44% melden"]						//0x2C
+				valveReportRates << ["45" : "Ventilöffnungsgrad bei Delta von 45% melden"]						//0x2D
+				valveReportRates << ["46" : "Ventilöffnungsgrad bei Delta von 46% melden"]						//0x2E
+				valveReportRates << ["47" : "Ventilöffnungsgrad bei Delta von 47% melden"]						//0x2F
+				valveReportRates << ["48" : "Ventilöffnungsgrad bei Delta von 48% melden"]						//0x30
+				valveReportRates << ["49" : "Ventilöffnungsgrad bei Delta von 49% melden"]						//0x31
+				valveReportRates << ["50" : "Ventilöffnungsgrad bei Delta von 50% melden"]						//0x32	
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Aktuelle ${valveReportRates[msg]}"
 			break;
 		case 7: 
-			log.info "Config Param 7 - ${cmd.scaledConfigurationValue}"
+			def windowDetectOptions = [:]
+				windowDetectOptions << ["0" : "Deaktiviert"] 													//0x00
+				windowDetectOptions << ["1" : "Empfindlichkeit niedrig"]										//0x01
+				windowDetectOptions << ["2" : "Empfindlichkeit mittel"]											//0x02
+				windowDetectOptions << ["3" : "Empfindlichkeit hoch"]											//0x03	
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Fensteroffen Erkennung - ${windowDetectOptions[msg]}"
 			break;
 		case 8: 
-			log.info "Config Param 8 - ${cmd.scaledConfigurationValue}"
+			def tempOffset = [:]
+				tempOffset << ["-50" : "Temperaturkorrektur um -5.0°C"]											//0xCE
+				tempOffset << ["-49" : "Temperaturkorrektur um -4.9°C"]											//0xCF
+				tempOffset << ["-48" : "Temperaturkorrektur um -4.8°C"]											//0xD0
+				tempOffset << ["-47" : "Temperaturkorrektur um -4.7°C"]											//0xD1
+				tempOffset << ["-46" : "Temperaturkorrektur um -4.6°C"]											//0xD2
+				tempOffset << ["-45" : "Temperaturkorrektur um -4.5°C"]											//0xD3
+				tempOffset << ["-44" : "Temperaturkorrektur um -4.4°C"]											//0xD4
+				tempOffset << ["-43" : "Temperaturkorrektur um -4.3°C"]											//0xD5
+				tempOffset << ["-42" : "Temperaturkorrektur um -4.2°C"]											//0xD6
+				tempOffset << ["-41" : "Temperaturkorrektur um -4.1°C"]											//0xD7
+				tempOffset << ["-40" : "Temperaturkorrektur um -4.0°C"]											//0xD8
+				tempOffset << ["-39" : "Temperaturkorrektur um -3.9°C"]											//0xD9
+				tempOffset << ["-38" : "Temperaturkorrektur um -3.8°C"]											//0xDA
+				tempOffset << ["-37" : "Temperaturkorrektur um -3.7°C"]											//0xDB
+				tempOffset << ["-36" : "Temperaturkorrektur um -3.6°C"]											//0xDC
+				tempOffset << ["-35" : "Temperaturkorrektur um -3.5°C"]											//0xDD
+				tempOffset << ["-34" : "Temperaturkorrektur um -3.4°C"]											//0xDE
+				tempOffset << ["-33" : "Temperaturkorrektur um -3.3°C"]											//0xDF
+				tempOffset << ["-32" : "Temperaturkorrektur um -3.2°C"]											//0xE0
+				tempOffset << ["-31" : "Temperaturkorrektur um -3.1°C"]											//0xE1
+				tempOffset << ["-30" : "Temperaturkorrektur um -3.0°C"]											//0xE2
+				tempOffset << ["-29" : "Temperaturkorrektur um -2.9°C"]											//0xE3
+				tempOffset << ["-28" : "Temperaturkorrektur um -2.8°C"]											//0xE4
+				tempOffset << ["-27" : "Temperaturkorrektur um -2.7°C"]											//0xE5
+				tempOffset << ["-26" : "Temperaturkorrektur um -2.6°C"]											//0xE6
+				tempOffset << ["-25" : "Temperaturkorrektur um -2.5°C"]											//0xE7
+				tempOffset << ["-24" : "Temperaturkorrektur um -2.4°C"]											//0xE8
+				tempOffset << ["-23" : "Temperaturkorrektur um -2.3°C"]											//0xE9
+				tempOffset << ["-22" : "Temperaturkorrektur um -2.2°C"]											//0xEA
+				tempOffset << ["-21" : "Temperaturkorrektur um -2.1°C"]											//0xEB
+				tempOffset << ["-20" : "Temperaturkorrektur um -2.0°C"]											//0xEC
+				tempOffset << ["-19" : "Temperaturkorrektur um -1.9°C"]											//0xED
+				tempOffset << ["-18" : "Temperaturkorrektur um -1.8°C"]											//0xEE
+				tempOffset << ["-17" : "Temperaturkorrektur um -1.7°C"]											//0xEF
+				tempOffset << ["-16" : "Temperaturkorrektur um -1.6°C"]											//0xF0
+				tempOffset << ["-15" : "Temperaturkorrektur um -1.5°C"]											//0xF1
+				tempOffset << ["-14" : "Temperaturkorrektur um -1.4°C"]											//0xF2
+				tempOffset << ["-13" : "Temperaturkorrektur um -1.3°C"]											//0xF3
+				tempOffset << ["-12" : "Temperaturkorrektur um -1.2°C"]											//0xF4
+				tempOffset << ["-11" : "Temperaturkorrektur um -1.1°C"]											//0xF5
+				tempOffset << ["-10" : "Temperaturkorrektur um -1.0°C"]											//0xF6
+				tempOffset << ["-9"  : "Temperaturkorrektur um -0.9°C"]											//0xF7
+				tempOffset << ["-8"  : "Temperaturkorrektur um -0.8°C"]											//0xF8
+				tempOffset << ["-7"  : "Temperaturkorrektur um -0.7°C"]											//0xF9
+				tempOffset << ["-6"  : "Temperaturkorrektur um -0.6°C"]											//0xFA
+				tempOffset << ["-5"  : "Temperaturkorrektur um -0.5°C"]											//0xFB
+				tempOffset << ["-4"  : "Temperaturkorrektur um -0.4°C"]											//0xFC
+				tempOffset << ["-3"  : "Temperaturkorrektur um -0.3°C"]											//0xFD
+				tempOffset << ["-2"  : "Temperaturkorrektur um -0.2°C"]											//0xFE
+				tempOffset << ["-1"  : "Temperaturkorrektur um -0.1°C"]											//0xFF
+				tempOffset << ["0"   : "Keine Korrektur"]              											//0x00
+				tempOffset << ["1"   : "Temperaturkorrektur um 0.1°C"]											//0x01
+				tempOffset << ["2"   : "Temperaturkorrektur um 0.2°C"]											//0x02
+				tempOffset << ["3"   : "Temperaturkorrektur um 0.3°C"]											//0x03
+				tempOffset << ["4"   : "Temperaturkorrektur um 0.4°C"]											//0x04
+				tempOffset << ["5"   : "Temperaturkorrektur um 0.5°C"]											//0x05
+				tempOffset << ["6"   : "Temperaturkorrektur um 0.6°C"]											//0x06
+				tempOffset << ["7"   : "Temperaturkorrektur um 0.7°C"]											//0x07
+				tempOffset << ["8"   : "Temperaturkorrektur um 0.8°C"]											//0x08
+				tempOffset << ["9"   : "Temperaturkorrektur um 0.9°C"]											//0x09
+				tempOffset << ["10"  : "Temperaturkorrektur um 1.0°C"]											//0x0A
+				tempOffset << ["11"  : "Temperaturkorrektur um 1.1°C"]											//0x0B
+				tempOffset << ["12"  : "Temperaturkorrektur um 1.2°C"]											//0x0C
+				tempOffset << ["13"  : "Temperaturkorrektur um 1.3°C"]											//0x0D
+				tempOffset << ["14"  : "Temperaturkorrektur um 1.4°C"]											//0x0E
+				tempOffset << ["15"  : "Temperaturkorrektur um 1.5°C"]											//0x0F
+				tempOffset << ["16"  : "Temperaturkorrektur um 1.6°C"]											//0x10
+				tempOffset << ["17"  : "Temperaturkorrektur um 1.7°C"]											//0x11
+				tempOffset << ["18"  : "Temperaturkorrektur um 1.8°C"]											//0x12
+				tempOffset << ["19"  : "Temperaturkorrektur um 1.9°C"]											//0x13
+				tempOffset << ["20"  : "Temperaturkorrektur um 2.0°C"]											//0x14
+				tempOffset << ["21"  : "Temperaturkorrektur um 2.1°C"]											//0x15
+				tempOffset << ["22"  : "Temperaturkorrektur um 2.2°C"]											//0x16
+				tempOffset << ["23"  : "Temperaturkorrektur um 2.3°C"]											//0x17
+				tempOffset << ["24"  : "Temperaturkorrektur um 2.4°C"]											//0x18
+				tempOffset << ["25"  : "Temperaturkorrektur um 2.5°C"]											//0x19
+				tempOffset << ["26"  : "Temperaturkorrektur um 2.6°C"]											//0x1A
+				tempOffset << ["27"  : "Temperaturkorrektur um 2.7°C"]											//0x1B
+				tempOffset << ["28"  : "Temperaturkorrektur um 2.8°C"]											//0x1C
+				tempOffset << ["29"  : "Temperaturkorrektur um 2.9°C"]											//0x1D
+				tempOffset << ["30"  : "Temperaturkorrektur um 3.0°C"]											//0x1E
+				tempOffset << ["31"  : "Temperaturkorrektur um 3.1°C"]											//0x1F
+				tempOffset << ["32"  : "Temperaturkorrektur um 3.2°C"]											//0x20
+				tempOffset << ["33"  : "Temperaturkorrektur um 3.3°C"]											//0x21
+				tempOffset << ["34"  : "Temperaturkorrektur um 3.4°C"]											//0x22
+				tempOffset << ["35"  : "Temperaturkorrektur um 3.5°C"]											//0x23
+				tempOffset << ["36"  : "Temperaturkorrektur um 3.6°C"]											//0x24
+				tempOffset << ["37"  : "Temperaturkorrektur um 3.7°C"]											//0x25
+				tempOffset << ["38"  : "Temperaturkorrektur um 3.8°C"]											//0x26
+				tempOffset << ["39"  : "Temperaturkorrektur um 3.9°C"]											//0x27
+				tempOffset << ["40"  : "Temperaturkorrektur um 4.0°C"]											//0x28
+				tempOffset << ["41"  : "Temperaturkorrektur um 4.1°C"]											//0x29
+				tempOffset << ["42"  : "Temperaturkorrektur um 4.2°C"]											//0x2A
+				tempOffset << ["43"  : "Temperaturkorrektur um 4.3°C"]											//0x2B
+				tempOffset << ["44"  : "Temperaturkorrektur um 4.4°C"]											//0x2C
+				tempOffset << ["45"  : "Temperaturkorrektur um 4.5°C"]											//0x2D
+				tempOffset << ["46"  : "Temperaturkorrektur um 4.6°C"]											//0x2E
+				tempOffset << ["47"  : "Temperaturkorrektur um 4.7°C"]											//0x2F
+				tempOffset << ["48"  : "Temperaturkorrektur um 4.8°C"]											//0x30
+				tempOffset << ["49"  : "Temperaturkorrektur um 4.9°C"]											//0x31
+				tempOffset << ["50"  : "Temperaturkorrektur um 5.0°C"]											//0x32
+				tempOffset << ["128" : "Temperatur wird extern bereitgestellt"]									//0x80	
+			def msg = cmd.scaledConfigurationValue.toString()
+			log.info "Gemessene Temperatur hat ${tempOffset[msg]}"
 			break;
 	}
 }
@@ -545,7 +806,7 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport 
 	def map = [ value: cmd.scaledSensorValue.toString(), displayed: true, name: "temperature", unit: "°C"]
 	state.temperature = cmd.scaledSensorValue
 	def gewuenscht = state.thermostatMode == "auto" ? state.heatingSetpoint : state.coolingSetpoint 
-	if ((state.temperature < gewuenscht) && (state.thermostatMode != "heat") && (state.thermostatMode != "off") && (state.thermostatMode != "emergency heat" )) {
+	if ((state.temperature < gewuenscht) && (state.thermostatMode != "manual") && (state.thermostatMode != "off") && (state.thermostatMode != "emergency heat" )) {
 		sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
 	} else {
 		sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
@@ -569,7 +830,7 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
 	// Hubitat supported ENUM ["heat", "cool", "emergency heat", "auto", "off"]
 	def event = []
 	if (cmd.mode == 0x01) { 
-		state.thermostatMode = "auto" 
+		state.thermostatMode = "heat" 
 	}
 	if (cmd.mode == 0x0F) { 
 		state.thermostatMode = "emergency heat"          
@@ -581,7 +842,7 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
 		state.thermostatMode = "off"	
 	}
 	if (cmd.mode == 31) { 
-		state.thermostatMode = "heat" 
+		state.thermostatMode = "manual" 
 		state.thermostatOperatingState = "vent economizer" 
 	}
 	event << createEvent(name: "thermostatMode", value: state.thermostatMode, displayed: true)
@@ -600,8 +861,11 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedRe
 	supportedModes << "cool" 
 	supportedModes << "emergency heat" 
 	supportedModes << "manual"
+	supportedModes << "auto"
 	state.supportedModes = supportedModes 
 	sendEvent(name: "supportedThermostatModes", value: supportedModes, displayed: false)
+	sendEvent(name: "supportedThermostatFanModes", value: ["auto"], displayed: false)
+	sendEvent(name: "thermostatFanMode", value: "auto", displayed: false)
 	log.info "Report Received : $cmd, Thermostat supported modes : $supportedModes"
 }    
     
@@ -629,7 +893,7 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedRe
 		return event
 	}
     
-//Security V1
+// V1
 //Command Class: 0x98
 	//Command: 0x03
 	def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityCommandsSupportedReport cmd) {
@@ -638,26 +902,16 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeSupportedRe
 	     //Short reportsToFollow
 		log.info "SecurityCommandsSupportedReport ${cmd}"
 	}
-	//Command: 0x81
-	def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
-	     //List<SecurityMessageEncapsulation> commandByte
-	     //Short commandClassIdentifier
-	     //Short commandIdentifier
-	     //Boolean secondFrame
-	     //Short sequenceCounter
-	     //Boolean sequenced
-		def encapsulatedCommand = cmd.encapsulatedCommand ([ 0x85:0x03, 0x20:0x03, 0x80:0x03, 0x70:0x06, 0x5A:0x01, 0x72:0x05, 0x71:0x05, 0x75:0x03, 0x31:0x05, 0x26:0x03, 0x40:0x03, 0x43:0x03, 0x86:0x12]) 
-		if (encapsulatedCommand) {
-			return zwaveEvent(encapsulatedCommand)
-		} else {
-		createEvent(descriptionText: cmd.toString())
-		}
-	}
 
-    
-//Version V2
-//Command Class: 0x86
-//Command: 0x12
+def zwaveEvent(hubitat.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand ([ 0x85:0x03, 0x20:0x03, 0x80:0x03, 0x70:0x06, 0x5A:0x01, 0x72:0x05, 0x71:0x05, 0x75:0x03, 0x31:0x05, 0x26:0x03, 0x40:0x03, 0x43:0x03, 0x86:0x12]) 
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	} else {
+	createEvent(descriptionText: cmd.toString())
+	}
+}
+
 def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 	     //Short applicationSubVersion
 	     //Short applicationVersion
@@ -709,25 +963,16 @@ def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 		sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
 	}
 
-//Zwaveplus Info V2
-//Command Class: 0x5E
-//Command: 0x02
 def zwaveEvent(hubitat.zwave.commands.zwaveplusinfov2.ZwaveplusInfoReport cmd) {
-	     //Long installerIconType
-	     //Long userIconType
-	     //Short zWaveplusNodeType
-	     //Short zWaveplusRoleType
-	     //Short zWaveplusVersion
-		sendEvent([name: "zWaveplusNodeType", value: cmd.zWaveplusNodeType ])
-		sendEvent([name: "zWaveplusRoleType", value: cmd.zWaveplusRoleType ])
-		sendEvent([name: "zWaveplusVersion", value: cmd.zWaveplusVersion ])
-	}
+	sendEvent([name: "zWaveplusNodeType", value: cmd.zWaveplusNodeType ])
+	sendEvent([name: "zWaveplusRoleType", value: cmd.zWaveplusRoleType ])
+	sendEvent([name: "zWaveplusVersion", value: cmd.zWaveplusVersion ])
+}
 
 def lock(){
  	def cmds = []
 	cmds << zwave.protectionV1.protectionSet(protectionState: 1)
 	cmds << zwave.protectionV1.protectionGet()
-	log.trace "lock $cmds" 
 	sendEvent(name: "lock", value: "locked", displayed: true)
 	secureSequence(cmds)
 }
@@ -736,28 +981,18 @@ def unlock(){
 	def cmds = []
 	cmds << zwave.protectionV1.protectionSet(protectionState: 0)
 	cmds << zwave.protectionV1.protectionGet()
-	log.trace "unlock $cmds" 
 	sendEvent(name: "lock", value: "unlocked", displayed: true)
 	secureSequence (cmds)
 }
 
-		  
-//nicht vergessen andere möglichkeit den Modus zu wechseln: 
-//commands.basicv1.BasicSet 
-//0xFF - auto
-//0xF0 - emergency heat
-//0x00 - cool 
-//0x0F - off
-//0xFE - heat
-def auto(){
+def heat(){
 	def cmds = []
-    state.thermostatMode = "auto"
+    state.thermostatMode = "heat"
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 	cmds << zwave.basicV1.basicSet(value: 0xFF)
 	cmds << zwave.basicV1.basicGet()
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
-	log.debug "Executing 'auto' $cmds"
 	secureSequence (cmds)
 }
 
@@ -769,7 +1004,6 @@ def cool(){
 	cmds << zwave.basicV1.basicGet()
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
-	log.debug "Executing 'cool' $cmds"
 	secureSequence(cmds)
 }
 
@@ -781,20 +1015,18 @@ def emergencyHeat(){
 	cmds << zwave.basicV1.basicSet(value: 0xF0)
 	cmds << zwave.basicV1.basicGet()
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
-	log.debug "Executing 'emergencyHeat' $cmds"
 	secureSequence(cmds)
 }
 
-def heat(){ //Manual-Mode
+def manual(){ //Manual-Mode
 	def cmds = []
-	state.thermostatMode = "heat"
-	sendEvent(name: "thermostatMode", value: "heat", displayed: true)
+	state.thermostatMode = "manual"
+	sendEvent(name: "thermostatMode", value: "manual", displayed: true)
     sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
     cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
 	cmds << zwave.basicV1.basicSet(value: 0xFE)
 	cmds << zwave.basicV1.basicGet()
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
-	log.debug "Executing 'heat' $cmds"
 	secureSequence(cmds)
 }
 
@@ -806,17 +1038,28 @@ def off(){
 	cmds << zwave.basicV1.basicSet(value: 0x0F)
 	cmds << zwave.basicV1.basicGet()
 	cmds << zwave.thermostatModeV2.thermostatModeGet()
-	log.debug "Executing 'off'"
 	secureSequence (cmds)
 }
+
+def auto() {
+    log.info "Das Modus Auto ist vom Gerät nicht unterstützt"
+    def cmds = []
+	state.thermostatMode = "manual"
+	sendEvent(name: "thermostatMode", value: "manual", displayed: true)
+    sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
+    cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
+	cmds << zwave.basicV1.basicSet(value: 0xFE)
+	cmds << zwave.basicV1.basicGet()
+	cmds << zwave.thermostatModeV2.thermostatModeGet()
+	secureSequence(cmds)
+} 
 
 def setCoolingSetpoint(degrees){
 	def cmds = []
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 11)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 11)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
-    log.debug "Executing 'setCoolingSetpoint' '${cmds}"
-	secureSequence(cmds)
+    secureSequence(cmds)
 }
 
 def setHeatingSetpoint(degrees){
@@ -824,16 +1067,14 @@ def setHeatingSetpoint(degrees){
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 1)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
-    log.debug "Executing 'setHeatingSetpoint' '${cmds}'"
-	secureSequence(cmds)
+    secureSequence(cmds)
 }
 
 def setThermostatMode(String){
 	def cmds = []    		
 	switch (String) {
-		case "heat":
-			state.thermostatMode = "heat"
-			sendEvent(name: "thermostatMode", value: "heat", displayed: true)
+		case "manual":
+			state.thermostatMode = "manual"
 			sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
 			cmds << zwave.basicV1.basicSet(value: 0xFE)
@@ -856,8 +1097,8 @@ def setThermostatMode(String){
 			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
 			break;
-		case "auto":
-        	state.thermostatMode = "auto"
+		case "heat":
+        	state.thermostatMode = "heat"
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 			cmds << zwave.basicV1.basicSet(value: 0xFF)
 			cmds << zwave.basicV1.basicGet()
@@ -872,18 +1113,29 @@ def setThermostatMode(String){
 			cmds << zwave.basicV1.basicGet()
 			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
+        case "auto":
+            state.thermostatMode = "manual"
+			sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)
+			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x1F)
+			cmds << zwave.basicV1.basicSet(value: 0xFE)
+			cmds << zwave.basicV1.basicGet()
+			cmds << zwave.thermostatModeV2.thermostatModeGet()
+			break;
 	}
-	log.debug "setThermostatMode wird ${String} genommen"
 	secureSequence (cmds)        	
+}
+
+def setThermostatFanMode(fanmode) {
+	//Das Modell hat kein Fan
+    log.info "Das Model besitzt kein Fan"
 }
 
 def setLevel(nextLevel) {
 	def cmds = []
-	if (state.thermostatMode == "heat") {
+	if (state.thermostatMode == "manual") {
     		cmds << zwave.switchMultilevelV1.switchMultilevelSet(value: nextLevel)
 	}
 	cmds << zwave.switchMultilevelV1.switchMultilevelGet()
-	log.trace "Executing 'setLevel' : $cmds"
 	secureSequence(cmds)
 }
 
@@ -1035,4 +1287,8 @@ def configure() {
 	secureSequence(cmds)
 }
 
-def poll () {}
+def poll () {
+    log.info "Polling ist nicht eingerichtet"
+    //ich empfehle kein Polling, Gerät meldet selber, falls es nötig, die Änderungen
+    //sonst machen die Einstellungen keinen Sinn
+}
