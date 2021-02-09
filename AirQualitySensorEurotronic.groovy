@@ -1,11 +1,10 @@
-//version 1.0.b
-
+//version 1.01.b
 
 import hubitat.device.HubAction
 import hubitat.device.Protocol
 
 metadata {
-	definition(name: "Luftgutesensor Eurotronic", namespace: "forgetiger55122", author: "Ravil Rubashkin", mnmn:"SmartThingsCommunity", vid:"e1fa8d53-5d1a-3d14-9329-fa156189e663" ) { //"9b37cdaf-0cdb-3643-94cf-867460ea67e6" "e1fa8d53-5d1a-3d14-9329-fa156189e663"
+	definition(name: "Luftgutesensor Eurotronic", namespace: "aelfot", author: "Ravil Rubashkin") { 
 	    capability "CarbonDioxideMeasurement"
         capability "TemperatureMeasurement"
 		capability "Relative Humidity Measurement"
@@ -191,10 +190,39 @@ metadata {
 
 }
 
+//0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x02
 def installed() {    
     sendEvent(name: "tamper", value: "clear", displayed: false)
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
 	response([
+		secureSequence(zwave.versionV1.versionGet()),     
+		"delay 500",
+		secureSequence(zwave.powerlevelV1.powerlevelGet()),     
+		"delay 500",
+		secureSequence(zwave.notificationV8.notificationGet(notificationType:13)),     
+		"delay 500",
+		secureSequence(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),     	
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:1)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:2)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:3)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:4)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:5)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:6)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:7)),     
+		"delay 500",
+		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:8)),     
+		"delay 500",
+		secureSequence(zwave.associationV2.associationGet(groupingIdentifier:2)),     
+		"delay 500",
+		secureSequence(zwave.associationGrpInfoV1.associationGroupNameGet(groupingIdentifier:2)),     
+		"delay 500",		
 		secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x01, scale: tmpE)),     // temperature
 		"delay 500",
         secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x05, scale: 0)),        // humidity
@@ -647,7 +675,7 @@ def parse(String description) {
 		//Short sequenceCounter
 		//Boolean sequenced
 		state.sec = 1
-		def encapsulatedCommand = cmd.encapsulatedCommand ([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x04]) 
+		def encapsulatedCommand = cmd.encapsulatedCommand ([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x02]) 
 		if (encapsulatedCommand) {
 			return zwaveEvent(encapsulatedCommand)
 		} else {
@@ -725,7 +753,6 @@ def parse(String description) {
 		}
 		def applicationVersionDisp = String.format("%d.%02d",cmd.applicationVersion,cmd.applicationSubVersion)
 		def zWaveProtocolVersionDisp = String.format("%d.%02d",cmd.zWaveProtocolVersion,cmd.zWaveProtocolSubVersion)
-		sendEvent([name: "applicationVersion", value:  applicationVersionDisp])
 		sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
 		sendEvent([name: "firmware0Version", value: cmd.firmware0Version])
 		sendEvent([name: "hardwareVersion", value: cmd.hardwareVersion])
