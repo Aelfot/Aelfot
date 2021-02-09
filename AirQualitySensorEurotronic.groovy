@@ -1,4 +1,5 @@
-//Version 1.0 Release
+//version 1.0.b
+
 
 import hubitat.device.HubAction
 import hubitat.device.Protocol
@@ -19,8 +20,7 @@ metadata {
         attribute "Dew Point", 			"string" 																			//mit Messeinheit
         attribute "VOC Niveau", 		"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
         attribute "CO2 Niveau", 		"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
-		attribute "AssotiationsList1",	"list"																				//AssotiationsListe Group 1
-		attribute "AssotiationsList2",	"list"																				//AssotiationsListe Group 2
+		attribute "Home Health",		"enum", ["gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]					//Interpretation
 		
 		command "addZuAssociationsliste", 	[[name:"nodeID*", type: "NUMBER", description: "nodeID vom hizufügenden Gerät"]]
 		command "delVomAssociationsliste", 	[[name:"nodeID*", type: "NUMBER", description: "nodeID vom hizufügenden Gerät"]]
@@ -195,8 +195,6 @@ def installed() {
     sendEvent(name: "tamper", value: "clear", displayed: false)
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
 	response([
-		secureSequence(zwave.notificationV8.notificationGet(notificationType: 0x0D)), 	                  // Home Health
-		"delay 500",
 		secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x01, scale: tmpE)),     // temperature
 		"delay 500",
         secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x05, scale: 0)),        // humidity
@@ -231,12 +229,12 @@ def parse(String description) {
 		//Short maxNodesSupported
 		//Short reportsToFollow
 		if (cmd.groupingIdentifier == 1) {
-			sendEvent(name:AssotiationsList1, value: cmd.nodeId, displayed: true)
+			//hier sollte nur hub angemeldet sein, uninteressant
+			state.associationGrouping1 = cmd.nodeId
 		}
 		if (cmd.groupingIdentifier == 2) {
-			def grosse = cmd.nodeId.size
-			sendEvent(name:AssotiationsList2, value: cmd.nodeId, displayed: true)
-			state.associationsListe = grosse			
+			state.associationsListeSize = cmd.nodeId.size
+			state.associationGrouping2 = cmd.nodeId
 		}
 		log.info "AssociationReport ist ${cmd}"
 	}
@@ -565,19 +563,24 @@ def parse(String description) {
 		if (cmd.notificationType == 0x0D) {
 			switch (cmd.event) {
 			case 0x01:
+				sendEvent(name:"Home Health",value:"gut",displayed:true)
 				vocNotifity (1)
 				break;
 			case 0x02:
+				sendEvent(name:"Home Health",value:"mittelmäßig",displayed:true)
 				vocNotifity (2)
 				break;
 			case 0x03:
+				sendEvent(name:"Home Health",value:"gesundheitsschädlich",displayed:true)
 				vocNotifity (3)
 				break;
 			case 0x04:
+				sendEvent(name:"Home Health",value:"lebensgefahr",displayed:true)
 				vocNotifity (4)
 				break;         
 			}
 		}
+		
 	}
 
 //Powerlevel V1
@@ -880,8 +883,7 @@ def configure() {
 	cmds << zwave.powerlevelV1.powerlevelGet()
 	cmds << zwave.versionV2.versionGet()
 	//cmds << zwave.zwaveplusInfoV2.zwaveplusInfoGet() 
-    cmds << zwave.notificationV8.notificationGet(notificationType:13)
-	sendEvent(name: "configuration", value: "sent", displayed: true)
+    sendEvent(name: "configuration", value: "sent", displayed: true)
 	secureSequence(cmds)
 }
 
@@ -898,8 +900,7 @@ def poll() {
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    //get carbon dioxide
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)			//get voc
-	cmds << zwave.associationV2.associationGet(groupingIdentifier:2)
-	secureSequence (cmds)
+	secureSequence(cmds)
 }
 
 
@@ -1019,7 +1020,7 @@ def addZuAssociationsliste (BigDecimal nID) {
 	//Short groupingIdentifier
 	//Object nodeId
 	def cmds = []
-	if (state.associationsliste < 5) {
+	if (state.associationsListeSize < 5) {
 		log.info "Die Aufnahme vom Gerät mit NodeID:${nID} wird vorgenommen"
 		cmds << zwave.associationV2.associationSet (groupingIdentifier:2, nodeId: nID)
 	} else {
@@ -1035,9 +1036,17 @@ def delVomAssociationsliste (BigDecimal nID) {
 	//Short groupingIdentifier
 	//Object nodeId
 	def cmds = []
-	if (state.associationsliste > 0) {
-		log.info "Die Entfernung vom Gerät mit NodeID:${nID} wird vorgenommen"
-		cmds << zwave.associationV2.associationRemove (groupingIdentifier:2, nodeId: nID)
+	if (state.associationsListeSize > 0) {
+		for (int i=0; i<state.associationsListeSize;i++) {
+			if (nID == state.associationGrouping2[i]) {
+				cmds << zwave.associationV2.associationRemove (groupingIdentifier:2, nodeId: nID)
+			}
+		}
+		if (cmds != []) {
+			log.info "Die Entfernung vom Gerät mit NodeID:${nID} wird vorgenommen"
+		} else {
+			log.warn "Ein Gerät mit solchem nodeID steht nicht auf der Associationsliste"
+		}	
 	} else {
 		log.warn "Es ist kein Gerät auf der Liste"
 	}
