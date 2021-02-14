@@ -1,16 +1,3 @@
-/*
-Version 2.0 Release für Hubitat Elevation C-7
-
-Aufnahme der Temperatur von einem externen Messgerät funktioniert!
-Bedienung:
-	Bei dem externen Messgerät den Thermostat auf die Assotiationsliste hinzufügen
-	Im Parametern 8 (Korrektur der gemessenen Temperatur) entrsprechenden Parametern wählen
-	Auf Configuration ein mal klicken
-	Genießen
-
-*/
-
-
 metadata {
 	definition (name: "Eurotronic Spirit Z-Wave Plus", namespace: "aelfot", author: "Ravil Rubashkin") {
 		capability "Configuration"
@@ -19,8 +6,13 @@ metadata {
 		capability "SwitchLevel"																		//Ventilkontrolle
 		capability "Thermostat"
 		capability "TamperAlert"																		//Lokaler Reset
+		capability "Actuator"
+		capability "Sensor"
+		capability "TemperatureMeasurement"
 		
 		attribute "Notifity", "string"
+		
+		command "manual"
 				
 		fingerprint mfr: "0148", prod: "0003", model: "0001", deviceJoinName: "Eurotronic Spirit TRV"
 	}
@@ -40,8 +32,8 @@ metadata {
 		LCDtimeoutOptions << ["9"  : "9 Secunden"]														//0x09
 		LCDtimeoutOptions << ["10" : "10 Secunden"]														//0x0A
 		LCDtimeoutOptions << ["11" : "11 Secunden"]														//0x0B
-       		LCDtimeoutOptions << ["12" : "12 Secunden"]														//0x0C
-       		LCDtimeoutOptions << ["13" : "13 Secunden"]														//0x0D
+       	LCDtimeoutOptions << ["12" : "12 Secunden"]														//0x0C
+       	LCDtimeoutOptions << ["13" : "13 Secunden"]														//0x0D
 		LCDtimeoutOptions << ["14" : "14 Secunden"]														//0x0E
 		LCDtimeoutOptions << ["15" : "15 Secunden"]														//0x0F
 		LCDtimeoutOptions << ["16" : "16 Secunden"]														//0x10
@@ -61,15 +53,15 @@ metadata {
 		LCDtimeoutOptions << ["30" : "20 Secunden"]														//0x1E
 				
 	def backlightOptions = [:]
-		backlightOptions << ["0" : "An"]															//0x00
-		backlightOptions << ["1" : "Aus"]															//0x01
+		backlightOptions << ["0" : "An"]																//0x00
+		backlightOptions << ["1" : "Aus"]																//0x01
 
 	def batteryNotOptions = [:]
-		batteryNotOptions << ["0" : "Eventgesteuert"]														//0x00
-		batteryNotOptions << ["1" : "1 Mal täglich"]														//0x01
+		batteryNotOptions << ["0" : "Eventgesteuert"]													//0x00
+		batteryNotOptions << ["1" : "1 Mal täglich"]													//0x01
 
 	def tempReportRates = [:]
-		tempReportRates << ["0"  : "Temperatur nicht automatisch senden"] 											//0x00
+		tempReportRates << ["0"  : "Temperatur nicht automatisch senden"] 								//0x00
 		tempReportRates << ["1"  : "Temperatur senden bei Differenz von 0.1°C"]							//0x01
 		tempReportRates << ["2"  : "Temperatur senden bei Differenz von 0.2°C"]							//0x02
 		tempReportRates << ["3"  : "Temperatur senden bei Differenz von 0.3°C"] 						//0x03
@@ -122,7 +114,7 @@ metadata {
 		tempReportRates << ["50" : "Temperatur senden bei Differenz von 5.0°C"] 						//0x32
 
 	def valveReportRates = [:] 
-		valveReportRates << ["0"  : "Deaktiviert"]										//0x00
+		valveReportRates << ["0"  : "Deaktiviert"]														//0x00
 		valveReportRates << ["1"  : "Ventilöffnungsgrad bei Delta von 1% melden"]						//0x01
 		valveReportRates << ["2"  : "Ventilöffnungsgrad bei Delta von 2% melden"]						//0x02
 		valveReportRates << ["3"  : "Ventilöffnungsgrad bei Delta von 3% melden"]						//0x03
@@ -175,13 +167,13 @@ metadata {
 		valveReportRates << ["50" : "Ventilöffnungsgrad bei Delta von 50% melden"]						//0x32
     
 	def windowDetectOptions = [:]
-		windowDetectOptions << ["0" : "Deaktiviert"] 												//0x00
+		windowDetectOptions << ["0" : "Deaktiviert"] 													//0x00
 		windowDetectOptions << ["1" : "Empfindlichkeit niedrig"]										//0x01
 		windowDetectOptions << ["2" : "Empfindlichkeit mittel"]											//0x02
 		windowDetectOptions << ["3" : "Empfindlichkeit hoch"]											//0x03
 				
 	def tempOffset = [:]
-       		tempOffset << ["-128": "Temperatur wird extern bereitgestellt"]										//0x80   
+        tempOffset << ["-128": "Temperatur wird extern bereitgestellt"]									//0x80   
 		tempOffset << ["-50" : "Temperaturkorrektur um -5.0°C"]											//0xCE
 		tempOffset << ["-49" : "Temperaturkorrektur um -4.9°C"]											//0xCF
 		tempOffset << ["-48" : "Temperaturkorrektur um -4.8°C"]											//0xD0
@@ -323,10 +315,10 @@ def secureSequence(commands, delay=1500) {
 
 def installed() {
 	def cmd = []
-	cmd << zwave.associationV2.associationGet()						//0x85:0x02
-	cmd << zwave.associationGrpInfoV1.associationGroupNameGet()				//0x59:0x01 Short groupingIdentifier
-	cmd << zwave.basicV1.basicGet()								//0x20:0x02
-	cmd << zwave.batteryV1.batteryGet()							//0x80:0x02
+	cmd << zwave.associationV2.associationGet()									//0x85:0x02
+	cmd << zwave.associationGrpInfoV1.associationGroupNameGet()					//0x59:0x01 Short groupingIdentifier
+	cmd << zwave.basicV1.basicGet()												//0x20:0x02
+	cmd << zwave.batteryV1.batteryGet()											//0x80:0x02
 	cmd << zwave.configurationV1.configurationGet(parameterNumber:1)			//0x70:0x05
 	cmd << zwave.configurationV1.configurationGet(parameterNumber:2)			//0x70:0x05
 	cmd << zwave.configurationV1.configurationGet(parameterNumber:3)			//0x70:0x05
@@ -336,15 +328,15 @@ def installed() {
 	cmd << zwave.configurationV1.configurationGet(parameterNumber:7)			//0x70:0x05
 	cmd << zwave.configurationV1.configurationGet(parameterNumber:8)			//0x70:0x05
 	cmd << zwave.manufacturerSpecificV1.manufacturerSpecificGet()				//0x72:0x04
-	cmd << zwave.protectionV1.protectionGet()						//0x75:0x02
-	cmd << zwave.sensorMultiLevelV3.sensorMultilevelGet()					//0x31:0x04
-	cmd << zwave.switchMultiLevelV1.switchMultilevelGet()					//0x26:0x02
-	cmd << zwave.thermostatModeV2.thermostatModeGet()					//0x40:0x02
-	cmd << zwave.thermostatModeV2.thermostatModeSupportedGet()				//0x40:0x04	Problematisch, Thermostat unterstützt nur V3-Version, hier keine Antwort
-	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:11)		//0x43:0x02
-	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:1)			//0x43:0x02
-	cmd << zwave.securityV1.securityCommandsSupportedGet()					//0x98:0x02
-	cmd << zwave.versionV2.versionGet()							//0x86:0x11
+	cmd << zwave.protectionV1.protectionGet()									//0x75:0x02
+	cmd << zwave.sensorMultiLevelV3.sensorMultilevelGet()						//0x31:0x04
+	cmd << zwave.switchMultiLevelV1.switchMultilevelGet()						//0x26:0x02
+	cmd << zwave.thermostatModeV2.thermostatModeGet()							//0x40:0x02
+	cmd << zwave.thermostatModeV2.thermostatModeSupportedGet()					//0x40:0x04	Problematisch, Thermostat unterstützt nur V3-Version, hier keine Antwort
+	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:11)	//0x43:0x02
+	cmd << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType:1)		//0x43:0x02
+	cmd << zwave.securityV1.securityCommandsSupportedGet()						//0x98:0x02
+	cmd << zwave.versionV2.versionGet()											//0x86:0x11
 	secureSequence(cmd)
 }
 
@@ -356,7 +348,7 @@ def zwaveEvent(hubitat.zwave.commands.associationv2.AssociationReport cmd) {
 		log.info "Associating $device.displayName in group ${cmd.groupingIdentifier}"
 		result << response(zwave.associationV2.associationSet(groupingIdentifier:cmd.groupingIdentifier, nodeId:zwaveHubNodeId))
 	}
-	log.info "AssociationReport meldet: ${cmd}"
+	log.info "${cmd}"
 	result
 }
 
@@ -364,7 +356,7 @@ def zwaveEvent(hubitat.zwave.commands.associationgrpinfov1.AssociationGroupNameR
 	//Short groupingIdentifier
 	//Short lengthOfName
 	//List<AssociationGroupNameReport> name
-	log.info "AssociationGroupNameReport ${cmd}"
+	log.info "${cmd}"
 }
 
 def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd) {
@@ -389,7 +381,7 @@ def zwaveEvent(hubitat.zwave.commands.basicv1.BasicReport cmd) {
 		sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)    
 	}
 	event << createEvent(name: "thermostatMode", value: mod, displayed: true)
-	log.info "Thermosat befindet sich im Modus ${mod}"
+    log.info "Thermosat befindet sich im Modus ${mod}"
 	return event
 }
 
@@ -459,7 +451,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 			break;
 		case 5: 
 			def tempReportRates = [:]
-				tempReportRates << ["0"  : "Temperatur nicht automatisch senden"] 							//0x00
+				tempReportRates << ["0"  : "Temperatur nicht automatisch senden"] 								//0x00
 				tempReportRates << ["1"  : "Temperatur senden bei Differenz von 0.1°C"]							//0x01
 				tempReportRates << ["2"  : "Temperatur senden bei Differenz von 0.2°C"]							//0x02
 				tempReportRates << ["3"  : "Temperatur senden bei Differenz von 0.3°C"] 						//0x03
@@ -580,7 +572,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 			break;
 		case 8: 
 			def tempOffset = [:]
-                		tempOffset << ["-128": "Temperatur wird extern bereitgestellt"]										//0x80
+                tempOffset << ["-128": "Temperatur wird extern bereitgestellt"]									//0x80
 				tempOffset << ["-50" : "Temperaturkorrektur um -5.0°C"]											//0xCE
 				tempOffset << ["-49" : "Temperaturkorrektur um -4.9°C"]											//0xCF
 				tempOffset << ["-48" : "Temperaturkorrektur um -4.8°C"]											//0xD0
@@ -698,7 +690,7 @@ def zwaveEvent(hubitat.zwave.commands.manufacturerspecificv1.ManufacturerSpecifi
 	if (cmd.productTypeId) { updateDataValue("productTypeId", cmd.productTypeId.toString()) }
 	if (cmd.productId) { updateDataValue("productId", cmd.productId.toString()) }
 	if (cmd.manufacturerId){ updateDataValue("manufacturerId", cmd.manufacturerId.toString()) }
-	log.info "ManufacturerSpecificReport : $cmd"
+	log.info "${cmd}"
 }
 
 def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
@@ -736,7 +728,7 @@ def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 			log.info "System event: $descriptionText"
 			break;
 	}
-	log.info "Notification Report : $cmd"
+	log.info "$cmd"
 }
 
 
@@ -744,13 +736,12 @@ def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 //gibt Antwort: ProtectionReport(localProtectionState:null, rfProtectionState:null)
 //nicht documentierte localProtectionState! und rfProtectionState! was ist das?
 def zwaveEvent(hubitat.zwave.commands.protectionv1.ProtectionReport cmd) { 
-	log.info "ProtectionReport ${cmd}"
 	def eventValue = ""
-	if (cmd.localProtectionState == 0) {
+	if (cmd.protectionState == 0) {
 		eventValue = "unlocked" 
 		log.info "ProtectionReport: unlocked"
 	}
-	if (cmd.localProtectionState == 1) { 
+	if (cmd.protectionState == 1) { 
 		eventValue = "locked"
 		log.info "ProtectionReport: locked"
 	}
@@ -761,22 +752,21 @@ def zwaveEvent(hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 
 def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport cmd) {
 	def map = [ value: cmd.scaledSensorValue.toString(), displayed: true, name: "temperature", unit: "°C"]
-	def gewuenscht = device.currentValue ("thermostatMode") == "heat" ? device.currentValue("heatingSetpoint") : device.currentValue("coolingSetpoint")
 	if (device.currentValue("thermostatMode") == "heat"){
-		if (tempOffset == "128"){
+		if (tempOffset == "-128"){
 			sendEvent(name: "thermostatOperatingState", value: "pending heat", displayed: true)
 		} else {
-			if (cmd.scaledSensorValue <= device.currentValue("heatingSetpoint")) {
+			if (cmd.scaledSensorValue < device.currentValue("heatingSetpoint")) {
 				sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
 			}else{
 				sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
 			}
 		}
 	} else if (device.currentValue("thermostatMode") == "cool") {
-		if (tempOffset == "128"){
+		if (tempOffset == "-128"){
 			sendEvent(name: "thermostatOperatingState", value: "pending heat", displayed: true)
 		} else {
-			if (cmd.scaledSensorValue <= device.currentValue("coolingSetpoint")) {
+			if (cmd.scaledSensorValue < device.currentValue("coolingSetpoint")) {
 				sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
 			}else{
 				sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
@@ -788,7 +778,7 @@ def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport 
 }
 
 def zwaveEvent(hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelReport cmd) {
-	log.info "SwitchMultilevelReport Valve ist bei ${cmd.value}"
+	log.info "Valveöffnung ist bei ${cmd.value} %"
 	createEvent(name:"level", value: cmd.value, unit:"%", displayed: true)
 }
     
@@ -808,19 +798,19 @@ def zwaveEvent(hubitat.zwave.commands.thermostatmodev2.ThermostatModeReport cmd)
 		mod = "emergency heat"
 		sendEvent(name: "thermostatOperatingState", value: "heating", displayed: true)
 	}
-	if (cmd.mode == 0x11) { 
+	if (cmd.mode == 0x0B) { 
 		mod = "cool" 
 	}
-	if (cmd.mode == 0) { 
+	if (cmd.mode == 0x00) { 
 		mod = "off"	
 		sendEvent(name: "thermostatOperatingState", value: "idle", displayed: true)
 	}
-	if (cmd.mode == 31) { 
+	if (cmd.mode == 0x1F) { 
 		mod = "manual" 
 		sendEvent(name: "thermostatOperatingState", value: "vent economizer", displayed: true)  
 	}
 	event << createEvent(name: "thermostatMode", value: mod, displayed: true)
-	log.info "Thermostat befindet sich im Modus : ${mod}"
+	log.info "Thermostat befindet sich im Modus ${mod}"
 	return event
 }
 
@@ -855,12 +845,10 @@ def zwaveEvent(hubitat.zwave.commands.thermostatsetpointv2.ThermostatSetpointRep
 	def mod = ""
 	if (cmd.setpointType == 1) { 
 		mod = "heat"
-		state.heatingSetpoint = cmd.scaledValue
 		event << createEvent(name: "heatingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)
 	}
 	if (cmd.setpointType == 11) { 
 		mod = "cool"
-		state.heatingSetpoint = cmd.scaledValue
 		event << createEvent(name: "coolingSetpoint", value: cmd.scaledValue, unit: getTemperatureScale(), displayed: true)			
 	}
 	log.info "Thermostat hat als Zieltemperatur im Modus ${mod} ${cmd.scaledValue} °C genommen"
@@ -937,8 +925,8 @@ def lock(){
  	def cmds = []
 	cmds << zwave.protectionV1.protectionSet(protectionState: 1)
 	cmds << zwave.protectionV1.protectionGet()
-	sendEvent(name: "lock", value: "locked", displayed: true)
 	log.info "Thermostat gelockt"
+	sendEvent(name: "lock", value: "locked", displayed: true)
 	secureSequence(cmds)
 }
 
@@ -946,14 +934,14 @@ def unlock(){
 	def cmds = []
 	cmds << zwave.protectionV1.protectionSet(protectionState: 0)
 	cmds << zwave.protectionV1.protectionGet()
-	sendEvent(name: "lock", value: "unlocked", displayed: true)
 	log.info "Thermostat ungelockt"
+	sendEvent(name: "lock", value: "unlocked", displayed: true)
 	secureSequence (cmds)
 }
 
 def heat(){
 	def cmds = []
-    sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: getTemperatureScale(), displayed: true)
+    sendEvent(name: "thermostatSetpoint", value: device.currentValue("heatingSetpoint"), unit: getTemperatureScale(), displayed: true)
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 	cmds << zwave.basicV1.basicSet(value: 0xFF)
 	cmds << zwave.basicV1.basicGet()
@@ -964,7 +952,7 @@ def heat(){
 
 def cool(){
 	def cmds = []
-    sendEvent(name: "thermostatSetpoint", value: state.coolingSetpoint, unit: getTemperatureScale(), displayed: true)
+    sendEvent(name: "thermostatSetpoint", value: device.currentValue("coolingSetpoint"), unit: getTemperatureScale(), displayed: true)
 	cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
 	cmds << zwave.basicV1.basicSet(value: 0x00)
 	cmds << zwave.basicV1.basicGet()
@@ -1016,6 +1004,7 @@ def setCoolingSetpoint(degrees){
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 11)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 11)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
+	log.info "Cooling Setpoint ist auf $degrees °C eingestellt"
     secureSequence(cmds)
 }
 
@@ -1025,6 +1014,7 @@ def setHeatingSetpoint(degrees){
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointSet(precision:1, scale:0, scaledValue: degrees, setpointType: 1)
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 1)
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
+	log.info "Heating Setpoint ist auf $degrees °C eingestellt"
     secureSequence(cmds)
 }
 
@@ -1044,7 +1034,7 @@ def setThermostatMode(String){
 			cmds << zwave.thermostatModeV2.thermostatModeGet()
 			break;
 		case "cool":
-			sendEvent(name: "thermostatSetpoint", value: state.coolingSetpoint, unit: getTemperatureScale(), displayed: true)
+			sendEvent(name: "thermostatSetpoint", value: device.currentValue("coolingSetpoint"), unit: getTemperatureScale(), displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x0B)
 			cmds << zwave.basicV1.basicSet(value: 0x00)
 			cmds << zwave.basicV1.basicGet()
@@ -1052,7 +1042,7 @@ def setThermostatMode(String){
 			cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()
 			break;
 		case "heat":
-        	sendEvent(name: "thermostatSetpoint", value: state.heatingSetpoint, unit: getTemperatureScale(), displayed: true)
+        	sendEvent(name: "thermostatSetpoint", value: device.currentValue("heatingSetpoint"), unit: getTemperatureScale(), displayed: true)
 			cmds << zwave.thermostatModeV2.thermostatModeSet(mode: 0x01)
 			cmds << zwave.basicV1.basicSet(value: 0xFF)
 			cmds << zwave.basicV1.basicGet()
@@ -1209,14 +1199,14 @@ def configure() {
 	def windowOpenL 		= stringToHexList (windowOpen)
 	def tempOffsetL 		= stringToHexList (tempOffset)
 	def cmds = []
-	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDinvertL,		    parameterNumber:1, size:1) //, scaledConfigurationValue: LCDinvertL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeoutL,		    parameterNumber:2, size:1) //, scaledConfigurationValue: LCDtimeoutL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: backlightL,		    parameterNumber:3, size:1) //, scaledConfigurationValue: backlightL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: battNotificationL, 	parameterNumber:4, size:1) //, scaledConfigurationValue: battNotificationL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: tempReportL,		    parameterNumber:5, size:1) //, scaledConfigurationValue: tempReportL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: valveReportL,	    parameterNumber:6, size:1) //, scaledConfigurationValue: valveReportL.get(0))
-	cmds << zwave.configurationV1.configurationSet(configurationValue: windowOpenL,		    parameterNumber:7, size:1) //, scaledConfigurationValue: windowOpenL.get(0))	
-	cmds << zwave.configurationV1.configurationSet(configurationValue: tempOffsetL,		    parameterNumber:8, size:1) //, scaledConfigurationValue: tempOffsetL.get(0))	
+	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDinvertL,		    parameterNumber:1, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeoutL,		    parameterNumber:2, size:1)	
+	cmds << zwave.configurationV1.configurationSet(configurationValue: backlightL,		    parameterNumber:3, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: battNotificationL, 	parameterNumber:4, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: tempReportL,		    parameterNumber:5, size:1)	
+	cmds << zwave.configurationV1.configurationSet(configurationValue: valveReportL,	    parameterNumber:6, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: windowOpenL,		    parameterNumber:7, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: tempOffsetL,		    parameterNumber:8, size:1)		
 	cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()     						//get temperature
 	cmds << zwave.thermostatModeV2.thermostatModeGet()                              //get Mode
 	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 0x01)    //get temp heat
@@ -1245,3 +1235,9 @@ def poll () {
     //ich empfehle kein Polling, Gerät meldet selber, falls es nötig, die Änderungen
     //sonst machen die Einstellungen keinen Sinn
 }
+
+def fanAuto() { log.info "Das Model besitzt kein Fan" }
+
+def fanOn() { log.info "Das Model besitzt kein Fan" }
+
+def fanCirculate(){log.info "Das Model besitzt kein Fan"}
