@@ -22,8 +22,8 @@ metadata {
 		
 		command "addZuAssociationsliste", 	[[name:"nodeID",		type: "NUMBER",  	description: "nodeID vom hizufügenden Gerät"], [name:"Gruppe", type: "ENUM", constraints: [/*"1",*/"2"]]]
 		command "delVomAssociationsliste", 	[[name:"nodeID",		type: "NUMBER",  	description: "nodeID vom hizufügenden Gerät"], [name:"Gruppe", type: "ENUM", constraints: [/*"1",*/"2"]]]
-        command "setSignalStaerke", 	    [[name:"Signalstärke",	type: "ENUM" , constraints: ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"],	description: "Signalstärke angeben"]]
-        
+        //command "setSignalStaerke", 	    [[name:"Signalstärke",	type: "ENUM" , constraints: ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"],	description: "Signalstärke angeben"]]
+                
 		fingerprint mfr:"0148", prod:"0005", model:"0001"        
         }	
 	
@@ -292,7 +292,7 @@ def parse(String description) {
 		def events = []
 		def cnf = ""
 		if (device.currentValue("Configuration")?.startsWith("sent")) { 
-			cnf = "receive"			
+			cnf = "receive:"			
 		} else {
 			cnf = device.currentValue("Configuration")
 		}
@@ -352,7 +352,7 @@ def parse(String description) {
 					tempReportRates << ["50" : "Temperatur senden bei Differenz von 5.0°C"] 						//0x32
 				def msg = cmd.scaledConfigurationValue.toString()				
 				log.info "Temperaturreport eingestellt auf ${tempReportRates[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";1"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 1"), displayed: true)
 				break;			
 			case 2:
 				def humReportRates = [:]
@@ -409,7 +409,7 @@ def parse(String description) {
 					humReportRates << ["50" : "Feuchtigkeit senden bei Differenz von 50%"] 						//0x32
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "Feuchtigkeitsreport eingestellt auf ${humReportRates[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";2"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 2"), displayed: true)
 				break;				
 			case 3:
 				def tempEinheit = [:]
@@ -417,7 +417,7 @@ def parse(String description) {
 					tempEinheit << ["1":"Fahrenheit"]
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "Temperatureinheit ist ${tempEinheit[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";3"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 3"), displayed: true)
 				break;				
 			case 4:
 				def tempAufloesung = [:]
@@ -426,7 +426,7 @@ def parse(String description) {
 					tempAufloesung << ["2":"Zwei Nachkommastellen"] 
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "Temperaturauflösung ist ${tempAufloesung[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";4"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 4"), displayed: true)
 				break;				
 			case 5:
 				def humAufloesung = [:]
@@ -435,7 +435,7 @@ def parse(String description) {
 					humAufloesung << ["2":"Zwei Nachkommastellen"]  
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "Feuchtigkeitsauflösung ist ${humAufloesung[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";5"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 5"), displayed: true)
 				break;				
 			case 6:
 				def vocChangeReport = [:]
@@ -452,7 +452,7 @@ def parse(String description) {
 					vocChangeReport << ["10":"Meldung bei Änderung um 1.0 ppm"]
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "VOC-Report ist ${vocChangeReport[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";6"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 6"), displayed: true)
 				break;				
 			case 7:
 				def co2ChangeReport = [:]
@@ -469,7 +469,7 @@ def parse(String description) {
 					co2ChangeReport << ["10":"Meldung bei Änderung um 1000 ppm"] 
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "CO2-Report ist ${co2ChangeReport[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";7"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 7"), displayed: true)
 				break;				
 			case 8:
 				def ledIndikator = [:]
@@ -477,7 +477,7 @@ def parse(String description) {
 					ledIndikator << ["1":"Led ein"]
 				def msg = cmd.scaledConfigurationValue.toString()
 				log.info "${ledIndikator[msg]}"
-				sendEvent(name: "Configuration", value: (cnf + ";8"), displayed: true)
+				sendEvent(name: "Configuration", value: (cnf + " 8"), displayed: true)
 				break;
 		}
 	}
@@ -605,26 +605,32 @@ def parse(String description) {
 		//static Short NOTIFICATION_TYPE_HOME_HEALTH = 13
 		log.info "Home-Health hat Niveau ${cmd.event} gemeldet"
 		if (cmd.notificationType == 0x0D) {
-			switch (cmd.event) {
-			case 0x01:
-				sendEvent(name:"Home-Health",value:"gut",displayed:true)
-				vocNotifity (1)
-				break;
-			case 0x02:
-				sendEvent(name:"Home-Health",value:"mittelmäßig",displayed:true)
-				vocNotifity (2)
-				break;
-			case 0x03:
-				sendEvent(name:"Home-Health",value:"gesundheitsschädlich",displayed:true)
-				vocNotifity (3)
-				break;
-			case 0x04:
-				sendEvent(name:"Home-Health",value:"lebensgefahr",displayed:true)
-				vocNotifity (4)
-				break;         
+			if (cmd.event == 0x06) {
+				if (cmd.eventParametersLength != 0) {
+					switch (cmd.eventParameter[0]) {
+						case 0x01:
+							sendEvent(name:"Home-Health",value:"gut",displayed:true)
+							vocNotifity (1)
+							break;
+						case 0x02:
+							sendEvent(name:"Home-Health",value:"mittelmäßig",displayed:true)
+							vocNotifity (2)
+							break;
+						case 0x03:
+							sendEvent(name:"Home-Health",value:"gesundheitsschädlich",displayed:true)
+							vocNotifity (3)
+							break;
+						case 0x04:
+							sendEvent(name:"Home-Health",value:"lebensgefahr",displayed:true)
+							vocNotifity (4)
+							break;         
+						}
+				} else {
+					log.warn "Warn!!! Home-Health liefert wieder falsche Werte!!! Hubitatfehler!!!"
+				}
 			}
 		}
-		log.info "Notifikation hat $cms gemeldet"		
+		log.info "$cmd"		
 	}
 
 //Powerlevel V1
@@ -726,8 +732,18 @@ def parse(String description) {
 		//static Short NO_SUPPORT = 0
 		//static Short SUCCESS = 255
 		//static Short WORKING = 1
-		log.info "${cmd}"
+         def msg = cmd.duration.toString() + " " + cmd.moreStatusUpdates.toString() + " " + cmd.reserved.toString() + " " + cmd.sessionID.toString() + " " + cmd.status.toString()
+    log.warn "$cmd"
+    sendEvent(name:"Supervision", value: msg)
 	}
+
+def zwaveEvent(hubitat.zwave.commands.supervisionv1.SupervisionGet cmd){
+    hubitat.zwave.Command encapCmd = cmd.encapsulatedCommand(commandClassVersions)
+    if (encapCmd) {
+        zwaveEvent(encapCmd)
+    }
+    sendHubCommand(new hubitat.device.HubAction(command(zwave.supervisionV1.supervisionReport(sessionID: cmd.sessionID, reserved: 0, moreStatusUpdates: false, status: 0xFF, duration: 0)), hubitat.device.Protocol.ZWAVE))
+}
 
 //Version V2
 //Command Class: 0x86
@@ -782,8 +798,10 @@ def parse(String description) {
 		}
 		def applicationVersionDisp = String.format("%d.%02d",cmd.applicationVersion,cmd.applicationSubVersion)
 		def zWaveProtocolVersionDisp = String.format("%d.%02d",cmd.zWaveProtocolVersion,cmd.zWaveProtocolSubVersion)
-		sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
-		sendEvent([name: "hardwareVersion", value: cmd.hardwareVersion])
+		//sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
+		//sendEvent([name: "hardwareVersion", value: cmd.hardwareVersion])
+		log.info "zWaveLibraryType ist $zWaveLibraryTypeDesc"
+		log.info "hardwareVersion ist $cmd.hardwareVersion"
 	}
 
 //Zwaveplus Info V2
@@ -939,8 +957,9 @@ def configure() {
 	cmds << zwave.versionV2.versionGet()
 	cmds << zwave.associationV2.associationGet (groupingIdentifier:1)
 	cmds << zwave.associationV2.associationGet (groupingIdentifier:2)
-	//cmds << zwave.zwaveplusInfoV2.zwaveplusInfoGet() 
+	//cmds << zwave.zwaveplusInfoV2.zwaveplusInfoGet () 									//Schande für Entwickler, nicht funktioniert
     sendEvent(name: "Configuration", value: "sent", displayed: true)
+    log.info "Configure sent"
 	secureSequence(cmds)
 }
 
@@ -952,11 +971,12 @@ def poll() {
 	log.info "Sensorpolling"
     def cmds = []
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     	//get temperature
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	    //get humidity
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     	//get dewpoint
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    //get carbon dioxide
-    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)			//get voc
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x01, scale: tmpE)     			//get temperature
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x05, scale: 0)     	    		//get humidity
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     			//get dewpoint
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    		//get carbon dioxide
+    cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)					//get voc
+    cmds << zwave.notificationV8.notificationGet(event:6, notificationType:13, v1AlarmType:0)	        //get home health
 	secureSequence(cmds)
 }
 
@@ -1078,8 +1098,8 @@ def addZuAssociationsliste (BigDecimal nID, gr) {
 	//Object nodeId
 	def cmds = []
 	def node = []
-	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size
-	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size
+	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size()
+	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size()
 	def list = gr == "1" ? gr1 : gr2
 	if (list < 5) {
 		log.info "Die Aufnahme vom Gerät mit NodeID:{$nID} wird vorgenommen"
@@ -1099,10 +1119,10 @@ def delVomAssociationsliste (BigDecimal nID, gr) {
 	//Object nodeId
 	def cmds = []
 	def node = []
-	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size
-	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size
+	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size()
+	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size()
 	def list = gr == "1" ? gr1 : gr2
-	def group = gr == "1" ? state.associationGrouping1 : state.associationGrouping2
+	def group = gr == "1" ? state.AssociationsGruppe1 : state.AssociationsGruppe2
 	if (list > 0) {
 		for (int i=0 ; i<list ; i++) {
 			if (nID == group[i]) {
@@ -1161,4 +1181,17 @@ def setSignalStaerke (signalStaerke) {
 	cmds << zwave.powerlevelV1.powerlevelGet ()
 	log.info "Singalstärke wird auf ${signalStaerke} eingestellt"
 	secureSequence (cmds)
+}
+
+//es ist doch wichtig, oder?
+//nein, das Gerät unterstützt so einen Class nicht
+//es stört doch nicht, wenn es hier steht?
+//dies ist nicht proffesionell, eber egal, mach was du möchtest
+def zwaveEvent(hubitat.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+   def encapsulatedCommand = zwave.getCommand(cmd.commandClass, cmd.command, cmd.data,1)
+   if (encapsulatedCommand) {
+       zwaveEvent(encapsulatedCommand)
+   } else {
+       log.warn "Unable to extract CRC16 command from ${cmd}"
+   }
 }
