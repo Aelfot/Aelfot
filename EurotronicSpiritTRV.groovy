@@ -1,3 +1,8 @@
+/*
+Version 2.0
+*/
+
+
 metadata {
 	definition (name: "Eurotronic Spirit Z-Wave Plus", namespace: "aelfot", author: "Ravil Rubashkin") {
 		capability "Configuration"
@@ -10,7 +15,8 @@ metadata {
 		capability "Sensor"
 		capability "TemperatureMeasurement"
 		
-		attribute "Notifity", "string"
+		attribute "Notifity", 		"string"
+		attribute "Configuration",	"string"
 		
 		command "manual"
 				
@@ -391,7 +397,12 @@ def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
 }
 
 def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
-	sendEvent(name: "configuration", value: "receive", displayed: true)
+	def cnf = ""
+		if (device.currentValue("Configuration")?.startsWith("sent")) { 
+			cnf = "receive:"			
+		} else {
+			cnf = device.currentValue("Configuration")
+		}
 	switch (cmd.parameterNumber) {
 		case 1: 
 			def LCDinvertOptions = [:]
@@ -399,6 +410,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				LCDinvertOptions << ["1" : "Nein"]																
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "LCD Invertieren - ${LCDinvertOptions[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 1"), displayed: true)
 			break;
 		case 2: 
 			def LCDtimeoutOptions = [:]
@@ -434,6 +446,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				LCDtimeoutOptions << ["30" : "20 Secunden"]														//0x1E
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "LCD Timeout - ${LCDtimeoutOptions[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 2"), displayed: true)
 			break;
 		case 3: 
 			def backlightOptions = [:]
@@ -441,6 +454,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				backlightOptions << ["1" : "Aus"]																//0x01	
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "Hintergrundbeleuchtung - ${backlightOptions[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 3"), displayed: true)
 			break;
 		case 4: 
 			def batteryNotOptions = [:]
@@ -448,6 +462,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				batteryNotOptions << ["1" : "1 Mal täglich"]													//0x01
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "Batteriestatus senden - ${batteryNotOptions[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 4"), displayed: true)
 			break;
 		case 5: 
 			def tempReportRates = [:]
@@ -504,6 +519,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				tempReportRates << ["50" : "Temperatur senden bei Differenz von 5.0°C"] 						//0x32	
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "Aktuelle ${tempReportRates[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 5"), displayed: true)
 			break;
 		case 6:
 			def valveReportRates = [:] 
@@ -560,6 +576,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				valveReportRates << ["50" : "Ventilöffnungsgrad bei Delta von 50% melden"]						//0x32	
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "Aktuelle ${valveReportRates[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 6"), displayed: true)
 			break;
 		case 7: 
 			def windowDetectOptions = [:]
@@ -569,6 +586,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				windowDetectOptions << ["3" : "Empfindlichkeit hoch"]											//0x03	
 			def msg = cmd.scaledConfigurationValue.toString()
 			log.info "Fensteroffen Erkennung - ${windowDetectOptions[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 7"), displayed: true)
 			break;
 		case 8: 
 			def tempOffset = [:]
@@ -676,6 +694,7 @@ def zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd) {
 				tempOffset << ["50"  : "Temperaturkorrektur um 5.0°C"]											//0x32					        
 			def msg = cmd.scaledConfigurationValue.toString()            
 			log.info "Gemessene Temperatur hat ${tempOffset[msg]}"
+			sendEvent(name: "Configuration", value: (cnf + " 8"), displayed: true)
 			break;
 	}
 }
@@ -748,6 +767,7 @@ def zwaveEvent(hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 	if (eventValue != "") {
 		createEvent(name: "lock", value: eventValue, displayed: true)
 	}
+    log.info "$cmd"
 }
 
 def zwaveEvent(hubitat.zwave.commands.sensormultilevelv3.SensorMultilevelReport cmd) {
@@ -912,7 +932,8 @@ def zwaveEvent(hubitat.zwave.commands.versionv2.VersionReport cmd) {
 			zWaveLibraryTypeDesc = "N/A"
 	}
 	def zWaveProtocolVersionDisp = String.format("%d.%02d",cmd.zWaveProtocolVersion,cmd.zWaveProtocolSubVersion)
-	sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
+	//sendEvent([name: "zWaveLibraryType", value:  zWaveLibraryTypeDesc])
+	log.info "zWaveLibraryType ist $zWaveLibraryTypeDesc"
 }
 
 def zwaveEvent(hubitat.zwave.commands.zwaveplusinfov2.ZwaveplusInfoReport cmd) {
@@ -1226,7 +1247,8 @@ def configure() {
 	cmds << zwave.thermostatModeV2.thermostatModeSupportedGet()                     //supportMode
 	cmds << zwave.manufacturerSpecificV1.manufacturerSpecificGet()                  //fingerprint
 	cmds << zwave.versionV2.versionGet()
-	sendEvent(name: "configuration", value: "sent", displayed: true)
+	sendEvent(name: "Configuration", value: "sent", displayed: true)
+    log.info "Configure sent"
 	secureSequence(cmds)
 }
 
@@ -1241,3 +1263,16 @@ def fanAuto() { log.info "Das Model besitzt kein Fan" }
 def fanOn() { log.info "Das Model besitzt kein Fan" }
 
 def fanCirculate(){log.info "Das Model besitzt kein Fan"}
+
+//es ist doch wichtig, oder?
+//nein, das Gerät unterstützt so einen Class nicht
+//es stört doch nicht, wenn es hier steht?
+//dies ist nicht proffesionell, eber egal, mach was du möchtest
+def zwaveEvent(hubitat.zwave.commands.crc16encapv1.Crc16Encap cmd) {
+   def encapsulatedCommand = zwave.getCommand(cmd.commandClass, cmd.command, cmd.data,1)
+   if (encapsulatedCommand) {
+       zwaveEvent(encapsulatedCommand)
+   } else {
+       log.warn "Unable to extract CRC16 command from ${cmd}"
+   }
+}
