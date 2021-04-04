@@ -8,22 +8,21 @@ metadata {
         capability "TamperAlert"
         capability "Polling"		
         
-        attribute "VOC", 				"number"																			//ohne Messeinheit
-        attribute "DewPoint", 			"number" 																			//ohne Messeinheit   
-        attribute "TVOC", 				"string"																			//mit Messeinheit
-        attribute "Dew-Point", 			"string" 																			//mit Messeinheit
-        attribute "VOC-Niveau", 		"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
-        attribute "CO2-Niveau", 		"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
-		attribute "Home-Health",		"enum", ["gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]					//Interpretation
-		attribute "Signal-Stärke",		"enum", ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"]
-		attribute "AssociationsGruppe1","list"
-		attribute "AssociationsGruppe2","list"
-		attribute "Configuration",		"string"
+        attribute "VOC", 					"number"																			//ohne Messeinheit
+        attribute "DewPoint", 				"number" 																			//ohne Messeinheit   
+        attribute "VOC-Niveau", 			"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
+        attribute "carbonDioxide-Niveau", 	"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]	//Interpretation
+		attribute "Home-Health",			"enum", ["gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]					//Interpretation eventbasiert, LED-Farbe-entsprechend
+		attribute "Signal-Stärke",			"enum", ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"]
+		attribute "Configuration",			"string"
+		attribute "groups", "Number"
 		
-		command "addZuAssociationsliste", 	[[name:"nodeID",		type: "NUMBER",  	description: "nodeID vom hizufügenden Gerät"], [name:"Gruppe", type: "ENUM", constraints: [/*"1",*/"2"]]]
-		command "delVomAssociationsliste", 	[[name:"nodeID",		type: "NUMBER",  	description: "nodeID vom hizufügenden Gerät"], [name:"Gruppe", type: "ENUM", constraints: [/*"1",*/"2"]]]
-        //command "setSignalStaerke", 	    [[name:"Signalstärke",	type: "ENUM" , constraints: ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"],	description: "Signalstärke angeben"]]
-                
+		command "setSignalStaerke", 	[[name:"Signalstärke",			type: "ENUM" , 	constraints: ["normal","-1 dBm","-2 dBm","-3 dBm","-4 dBm","-5 dBm","-6 dBm","-7 dBm","-8 dBm","-9 dBm"],	description: "Signalstärke angeben"]]
+        command "setAssociationGroup", [[name: "Group Number*",			type:"NUMBER", 	description: "Provide the association group number to edit"], 
+                                        [name: "Z-Wave Node*", 			type:"STRING", 	description: "Enter the node number (in hex) associated with the node"], 
+                                        [name: "Action*", 				type:"ENUM", 	constraints: ["Add", "Remove"]],
+                                        [name:"Multi-channel Endpoint", type:"NUMBER", 	description: "Currently not implemented"]]         
+        
 		fingerprint mfr:"0148", prod:"0005", model:"0001"        
         }	
 	
@@ -178,28 +177,29 @@ metadata {
         ledIndikator << ["1":"Led ein"] //0x01
 
 	preferences {
-        input "Temperaturdifferenz",     "enum", title: "Temperatur on Change Reporting", 	options: tempReportRates, 	description: "Default: 0.5°C", 							required: false, displayDuringSetup: true
-        input "Feuchtigkeitsdifferenz",  "enum", title: "Feuchtigkeit on Change Reporting",	options: humReportRates, 	description: "Default: 5%", 							required: false, displayDuringSetup: true
-        input "Temperatureeinheit",      "enum", title: "Temperatureeinheit", 				options: tempEinheit, 		description: "Default: °C", 							required: false, displayDuringSetup: true
-        input "TemperaturAufloesung",    "enum", title: "Auflösung Temperatur", 			options: tempAufloesung, 	description: "Default: Eine Nachkommastelle", 			required: false, displayDuringSetup: true
-        input "FeuchtigkeitsAufloesung", "enum", title: "Auflösung Feuchte", 				options: humAufloesung, 	description: "Default: Keine Nachkommastelle", 			required: false, displayDuringSetup: true
-        input "VOCChageReporting",       "enum", title: "VOC-on Change Reporting", 			options: vocChangeReport, 	description: "Default: 0.5 ppm", 						required: false, displayDuringSetup: true
-        input "CO2ChangeReporting",      "enum", title: "CO2 Change Reporting", 			options: co2ChangeReport, 	description: "Default: 500 ppm", 						required: false, displayDuringSetup: true
-        input "LedIndikation",           "enum", title: "Luftgüte per LED signalisieren", 	options: ledIndikator, 		description: "Default: Luftgüte per Led signalisieren", required: false, displayDuringSetup: true   
+        input "Temperaturdifferenz",     "enum", title: "Temperatur on Change Reporting", 	options: tempReportRates, 	description: "Default: 0.5°C", 							defaultValue:"5",	required: false, displayDuringSetup: true
+        input "Feuchtigkeitsdifferenz",  "enum", title: "Feuchtigkeit on Change Reporting",	options: humReportRates, 	description: "Default: 5%", 							defaultValue:"5",	required: false, displayDuringSetup: true
+        input "Temperatureeinheit",      "enum", title: "Temperatureeinheit", 				options: tempEinheit, 		description: "Default: °C", 							defaultValue:"0",	required: false, displayDuringSetup: true
+        input "TemperaturAufloesung",    "enum", title: "Auflösung Temperatur", 			options: tempAufloesung, 	description: "Default: Eine Nachkommastelle", 			defaultValue:"1",	required: false, displayDuringSetup: true
+        input "FeuchtigkeitsAufloesung", "enum", title: "Auflösung Feuchte", 				options: humAufloesung, 	description: "Default: Keine Nachkommastelle", 			defaultValue:"0",	required: false, displayDuringSetup: true
+        input "VOCChageReporting",       "enum", title: "VOC-on Change Reporting", 			options: vocChangeReport, 	description: "Default: 0.5 ppm", 						defaultValue:"5",	required: false, displayDuringSetup: true
+        input "CO2ChangeReporting",      "enum", title: "CO2 Change Reporting", 			options: co2ChangeReport, 	description: "Default: 500 ppm", 						defaultValue:"5",	required: false, displayDuringSetup: true
+        input "LedIndikation",           "enum", title: "Luftgüte per LED signalisieren", 	options: ledIndikator, 		description: "Default: Luftgüte per Led signalisieren", defaultValue:"1",	required: false, displayDuringSetup: true   
 	}
 
 }
 
-//0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x02
 def installed() {    
     sendEvent(name: "tamper", value: "clear", displayed: false)
 	def tmpE = Temperatureeinheit=="1" ? 1 : 0
+	sendHubCommand(new hubitat.device.HubAction(new hubitat.zwave.commands.zwaveplusinfov2.ZwaveplusInfoGet().format(), hubitat.device.Protocol.ZWAVE))
+	sendHubCommand(new hubitat.device.HubAction(new hubitat.zwave.commands.firmwareupdatemdv3.FirmwareMdGet().format(), hubitat.device.Protocol.ZWAVE))
 	response([
 		secureSequence(zwave.versionV1.versionGet()),     
 		"delay 500",
 		secureSequence(zwave.powerlevelV1.powerlevelGet()),     
 		"delay 500",
-		secureSequence(zwave.notificationV8.notificationGet(notificationType:13)),     
+		secureSequence(zwave.notificationV8.notificationGet(notificationType:13, event:6)),     
 		"delay 500",
 		secureSequence(zwave.manufacturerSpecificV2.manufacturerSpecificGet()),     	
 		"delay 500",
@@ -219,10 +219,10 @@ def installed() {
 		"delay 500",
 		secureSequence(zwave.configurationV1.configurationGet(parameterNumber:8)),     
 		"delay 500",
+		secureSequence(zwave.associationV2.associationGet(groupingIdentifier:1)),     
+		"delay 500",
 		secureSequence(zwave.associationV2.associationGet(groupingIdentifier:2)),     
 		"delay 500",
-		secureSequence(zwave.associationGrpInfoV1.associationGroupNameGet(groupingIdentifier:2)),     
-		"delay 500",		
 		secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x01, scale: tmpE)),     // temperature
 		"delay 500",
         secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x05, scale: 0)),        // humidity
@@ -232,8 +232,7 @@ def installed() {
         secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x11, scale: 0)),        // CO2
 		"delay 500",
         secureSequence(zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType: 0x27, scale: 1)),        // VOC
-		"delay 500",
-        secureSequence(zwave.associationV2.associationGet (groupingIdentifier:1))
+		"delay 500"
 	])     
 }
 
@@ -250,25 +249,33 @@ def parse(String description) {
     return results
 }
 
+
 //Association V2
 //Command Class: 0x85
 	//Association Report
 	//Command: 0x03
 	def zwaveEvent(hubitat.zwave.commands.associationv2.AssociationReport cmd) {
-		//Short groupingIdentifier
-		//Short maxNodesSupported
-		//Short reportsToFollow
-		if (cmd.groupingIdentifier == 1) {
-			//hier sollte nur hub angemeldet sein, uninteressant
-			state.AssociationsGruppe1 = cmd.nodeId
-			sendEvent(name:"AssociationsGruppe1", value: cmd.nodeId)
-		}
-		if (cmd.groupingIdentifier == 2) {
-			state.AssociationsGruppe2 = cmd.nodeId
-			sendEvent(name:"AssociationsGruppe2", value: cmd.nodeId)
-		}
-		log.info "${cmd}"
+    	log.debug "${device.label?device.label:device.name}: ${cmd}"
+    	def temp = []
+    	if (cmd.nodeId != []) {
+       		cmd.nodeId.each {
+          		temp += it.toInteger()
+       		}
+    	} 
+    	state."actualAssociation${cmd.groupingIdentifier}" = temp
+    	log.info "${device.label?device.label:device.name}: Associations for Group ${cmd.groupingIdentifier}: ${temp}"
+    	updateDataValue("associationGroup${cmd.groupingIdentifier}", "$temp")
 	}
+
+	//Association Groupings Report
+	//Command: 0x06
+	def zwaveEvent(hubitat.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
+    	log.debug "${device.label?device.label:device.name}: ${cmd}"
+    	sendEvent(name: "groups", value: cmd.supportedGroupings)
+    	log.info "${device.label?device.label:device.name}: Supported association groups: ${cmd.supportedGroupings}"
+    	state.associationGroups = cmd.supportedGroupings
+	}
+
 
 //Association Grp Info V1
 //Command Class: 0x59
@@ -505,6 +512,33 @@ def parse(String description) {
 		if (cmd.productTypeId)		{ updateDataValue("productTypeId",	cmd.productTypeId.toString()) }		
 	}
 
+//Firmware Update Md V3
+//Command Class: 0x7A
+	//Firmware Md Report
+	//Command: 0x02
+	def zwaveEvent (hubitat.zwave.commands.firmwareupdatemdv3.FirmwareMdReport cmd) {
+		//Integer checksum
+		//Integer firmwareId
+		//List<FirmwareMdReport> firmwareIds
+		//Boolean firmwareUpgradable
+		//Integer manufacturerId
+		//Integer maxFragmentSize
+		//Short numberOfTargets
+ 		log.info "$cmd"
+ }
+
+	//Firmware Update Md Status Report
+	//Command: 0x07
+	def zwaveEvent (hubitat.zwave.commands.firmwareupdatemdv3.FirmwareUpdateMdStatusReport cmd) {
+		//Short status
+		//static Short STATUS_IINVALID_FRAGMENT_SIZE = 2
+		//static Short STATUS_NOT_DOWNLOADABLE = 3
+		//static Short STATUS_SUCCESSFULLY = 255
+		//static Short STATUS_UNABLE_TO_RECEIVE = 1
+		//static Short STATUS_UNABLE_TO_RECEIVE_WITHOUT_CHECKSUM_ERROR = 0
+ 		log.info "$cmd"
+ }
+
 //Sensor Multilevel V10
 //Command Class: 0x31
 	//Sensor Multilevel Report
@@ -530,6 +564,9 @@ def parse(String description) {
 				map.unit = cmd.scale == 1 ? "°F" : "°C"
 				map.value = cmd.scaledSensorValue.toString()
 				log.info "Temperature ist ${map.value}"
+				state.actualAssociation2.each {
+					sendHubCommand(new hubitat.device.HubAction(new hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelReport().format(), hubitat.device.Protocol.ZWAVE,it.toString()))
+				}
 				break;
 			case 0x05:
 				map.name = "humidity"			
@@ -542,8 +579,6 @@ def parse(String description) {
 				map.unit = cmd.scale == 1 ? "°F" : "°C"
 				map.value = cmd.scaledSensorValue.toString()
 				log.info "Dew-Point ist ${map.value}"
-				msg = map.value.toString() + " " + map.unit
-				sendEvent (name:"Dew-Point", value: msg)
 				break;
 			case 0x11:
 				map.name = "carbonDioxide"
@@ -567,8 +602,6 @@ def parse(String description) {
 				map.unit = "ppb"
 				map.value = (cmd.scaledSensorValue.toFloat() * 1000).toInteger()
 				log.info "VOC ist ${map.value}"
-				msg = map.value.toString() + " " + map.unit
-				sendEvent(name:"TVOC", value: msg)
 				if (map.value < 65) {
 					vocNotifity (0)
 					} else if (map.value < 220) {
@@ -610,25 +643,25 @@ def parse(String description) {
 					switch (cmd.eventParameter[0]) {
 						case 0x01:
 							sendEvent(name:"Home-Health",value:"gut",displayed:true)
-							vocNotifity (1)
 							break;
 						case 0x02:
 							sendEvent(name:"Home-Health",value:"mittelmäßig",displayed:true)
-							vocNotifity (2)
 							break;
 						case 0x03:
 							sendEvent(name:"Home-Health",value:"gesundheitsschädlich",displayed:true)
-							vocNotifity (3)
 							break;
 						case 0x04:
 							sendEvent(name:"Home-Health",value:"lebensgefahr",displayed:true)
-							vocNotifity (4)
 							break;         
 						}
 				} else {
 					log.warn "Warn!!! Home-Health liefert wieder falsche Werte!!! Hubitatfehler!!!"
 				}
+			} else {
+				log.warn "Warnung!!! Home-Health hat falsche Event gemeldet!!!"
 			}
+		} else {
+			log.warn "Warnung!!! Notifikation hat keine Home-Health gemeldet, algemeiner Fehler!"
 		}
 		log.info "$cmd"		
 	}
@@ -710,7 +743,7 @@ def parse(String description) {
 		//Short sequenceCounter
 		//Boolean sequenced
 		state.sec = 1
-		def encapsulatedCommand = cmd.encapsulatedCommand ([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x02]) 
+		def encapsulatedCommand = cmd.encapsulatedCommand ([0x85:0x03, 0x85:0x06, 0x59:0x02, 0x70:0x06, 0x5A:0x01, 0x7A:0x02, 0x7A:0x07, 0x72:0x05, 0x31:0x05, 0x71:0x05, 0x73:0x03, 0x86:0x12])//([0x86:0x12,0x73:0x03,0x31:0x05,0x71:0x05,0x72:05,0x7A:0x02,0x5A:0x01,0x70:0x06,0x85:0x03,0x59:0x02]) 
 		if (encapsulatedCommand) {
 			return zwaveEvent(encapsulatedCommand)
 		} else {
@@ -737,7 +770,9 @@ def parse(String description) {
     sendEvent(name:"Supervision", value: msg)
 	}
 
-def zwaveEvent(hubitat.zwave.commands.supervisionv1.SupervisionGet cmd){
+	//Supervision Get
+	//Command: 0x01
+void zwaveEvent(hubitat.zwave.commands.supervisionv1.SupervisionGet cmd){
     hubitat.zwave.Command encapCmd = cmd.encapsulatedCommand(commandClassVersions)
     if (encapCmd) {
         zwaveEvent(encapCmd)
@@ -848,8 +883,6 @@ def zwaveEvent(hubitat.zwave.commands.supervisionv1.SupervisionGet cmd){
 		log.info "ZwaveplusInfoReport ${cmd}"
 	}
 
-
-
 def vocNotifity (int value) { 
     def msg = ""
     switch (value) {    
@@ -894,7 +927,7 @@ def co2Notifity (int value) {
             msg = "lebensgefahr"
             break;
     }
-    sendEvent (name:"CO2-Niveau", value: msg)
+    sendEvent (name:"carbonDioxide-Niveau", value: msg)
 }
 
 def zwaveEvent(hubitat.zwave.Command cmd) {
@@ -957,8 +990,8 @@ def configure() {
 	cmds << zwave.versionV2.versionGet()
 	cmds << zwave.associationV2.associationGet (groupingIdentifier:1)
 	cmds << zwave.associationV2.associationGet (groupingIdentifier:2)
-	//cmds << zwave.zwaveplusInfoV2.zwaveplusInfoGet () 									//Schande für Entwickler, nicht funktioniert
-    sendEvent(name: "Configuration", value: "sent", displayed: true)
+	sendEvent(name: "Configuration", value: "sent", displayed: true)
+	sendHubCommand(new hubitat.device.HubAction(new hubitat.zwave.commands.zwaveplusinfov2.ZwaveplusInfoGet().format(), hubitat.device.Protocol.ZWAVE))
     log.info "Configure sent"
 	secureSequence(cmds)
 }
@@ -976,7 +1009,7 @@ def poll() {
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x0B, scale: tmpE)     			//get dewpoint
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x11, scale: 0)     	    		//get carbon dioxide
     cmds << zwave.sensorMultilevelV10.sensorMultilevelGet(sensorType:0x27, scale: 1)					//get voc
-    cmds << zwave.notificationV8.notificationGet(event:6, notificationType:13, v1AlarmType:0)	        //get home health
+    cmds << zwave.notificationV8.notificationGet(event:0x06, notificationType:0x0D, v1AlarmType:0x00)	//get home health
 	secureSequence(cmds)
 }
 
@@ -1084,62 +1117,58 @@ def stringToHexList(String value) {
 		case "47"  : return [0x2F]
 		case "48"  : return [0x30]
 		case "49"  : return [0x31]
-		case "50"  : return [0x32]			
+		case "50"  : return [0x32]
+        case "51"  : return [0x33]
+        case "52"  : return [0x34]
+        case "53"  : return [0x35]
+        case "54"  : return [0x36]
+        case "55"  : return [0x37]
+        case "56"  : return [0x38]
+        case "57"  : return [0x39]
+        case "58"  : return [0x3A]
+        case "59"  : return [0x3B]
+        case "60"  : return [0x3C]
+        case "61"  : return [0x3D]
+        case "62"  : return [0x3E]
+        case "63"  : return [0x3F]
+        case "64"  : return [0x40]
+        case "65"  : return [0x41]
+        case "66"  : return [0x42]
+        case "67"  : return [0x43]
+        case "68"  : return [0x44]
+        case "69"  : return [0x45]
+        case "70"  : return [0x46]
+        case "71"  : return [0x47]
+        case "72"  : return [0x48]
+        case "73"  : return [0x49]
+        case "74"  : return [0x4A]
+        case "75"  : return [0x4B]
+        case "76"  : return [0x4C]
+        case "77"  : return [0x4D]
+        case "78"  : return [0x4E]
+        case "79"  : return [0x4F]
+        case "80"  : return [0x50]
+        case "81"  : return [0x51]
+        case "82"  : return [0x52]
+        case "83"  : return [0x53]
+        case "84"  : return [0x54]
+        case "85"  : return [0x55]
+        case "86"  : return [0x56]
+        case "87"  : return [0x57]
+        case "88"  : return [0x58]
+        case "89"  : return [0x59]
+        case "90"  : return [0x5A]
+        case "91"  : return [0x5B]
+        case "92"  : return [0x5C]
+        case "93"  : return [0x5D]
+        case "94"  : return [0x5E]
+        case "95"  : return [0x5F]
+        case "96"  : return [0x60]
+        case "97"  : return [0x61]
+        case "98"  : return [0x62]
+        case "99"  : return [0x63]
 		default: return null
 	}
-}
-
-//Dies ist nötig zur Assotiation von Geräten.
-//Beispiel ist TRV von Eurotronic
-//Wenn heir NodeID von TRV angegeben wirdn und TRV in externe Temperatur-Modus gestellt, wird externe Temperatur zur Steuerung genommen.
-def addZuAssociationsliste (BigDecimal nID, gr) {
-	//hubitat.zwave.commands.associationv2.AssociationSet {
-	//Short groupingIdentifier
-	//Object nodeId
-	def cmds = []
-	def node = []
-	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size()
-	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size()
-	def list = gr == "1" ? gr1 : gr2
-	if (list < 5) {
-		log.info "Die Aufnahme vom Gerät mit NodeID:{$nID} wird vorgenommen"
-		node << nID
-		cmds << zwave.associationV2.associationSet (groupingIdentifier:gr.toInteger(), nodeId: node)
-	} else {
-		log.warn "Es ist schon maximale Anzahl an Geräten auf der Associationsliste erreicht. Noch eine Aufnahme nicht möglich"
-	}
-	cmds << zwave.associationV2.associationGet (groupingIdentifier:gr.toInteger())
-	secureSequence (cmds)
-}
-
-//Genau das Gegenteil vom Programm von Oben
-def delVomAssociationsliste (BigDecimal nID, gr) {
-	//hubitat.zwave.commands.associationv2.AssociationRemove {
-	//Short groupingIdentifier
-	//Object nodeId
-	def cmds = []
-	def node = []
-	def gr1 = state.AssociationsGruppe1 == null ? 0 : state.AssociationsGruppe1.size()
-	def gr2 = state.AssociationsGruppe2 == null ? 0 : state.AssociationsGruppe2.size()
-	def list = gr == "1" ? gr1 : gr2
-	def group = gr == "1" ? state.AssociationsGruppe1 : state.AssociationsGruppe2
-	if (list > 0) {
-		for (int i=0 ; i<list ; i++) {
-			if (nID == group[i]) {
-				node << nID
-				cmds << zwave.associationV2.associationRemove (groupingIdentifier:gr.toInteger(), nodeId: node)
-			}
-		}
-		if (cmds != []) {
-			log.info "Die Entfernung vom Gerät mit NodeID:${nID} wird vorgenommen"
-		} else {
-			log.warn "Ein Gerät mit solchem nodeID steht nicht auf der Associationsliste"
-		}	
-	} else {
-		log.warn "Es ist kein Gerät auf der Liste"
-	}
-	cmds << zwave.associationV2.associationGet (groupingIdentifier:gr.toInteger())
-	secureSequence (cmds)
 }
 
 def setSignalStaerke (signalStaerke) {
@@ -1183,15 +1212,63 @@ def setSignalStaerke (signalStaerke) {
 	secureSequence (cmds)
 }
 
-//es ist doch wichtig, oder?
-//nein, das Gerät unterstützt so einen Class nicht
-//es stört doch nicht, wenn es hier steht?
-//dies ist nicht proffesionell, eber egal, mach was du möchtest
-def zwaveEvent(hubitat.zwave.commands.crc16encapv1.Crc16Encap cmd) {
-   def encapsulatedCommand = zwave.getCommand(cmd.commandClass, cmd.command, cmd.data,1)
-   if (encapsulatedCommand) {
-       zwaveEvent(encapsulatedCommand)
-   } else {
-       log.warn "Unable to extract CRC16 command from ${cmd}"
-   }
+def setAssociationGroup(group, nodes, action, endpoint = null){
+   // Normalize the arguments to be backwards compatible with the old method
+    group  = "${group}" =~ /\d+/ ? (group as int) : group                             // convert group to int (if possible)
+    maxAssoz = group == 1 ? 1 : 5
+	def cmds = []
+	count = 0
+	action = action == 1 ? "Add" : action == 0 ? "Remove": action
+		
+    if (! nodes.every { it =~ /[0-9A-F]+/ }) {
+        log.error "${device.label?device.label:device.name}: invalid Nodes ${nodes}"
+        return
+    }
+
+    if (group < 1 || group > 2) {
+        log.error "${device.label?device.label:device.name}: Association group is invalid 1 <= ${group} <= ${maxAssociationGroup()}"
+        return
+    }
+	
+	if (state."actualAssociation${group}" != null) {
+		count = state."actualAssociation${group}".size()
+	}
+    
+	log.debug "nodes ist $nodes"
+	
+	if (nodes != null) {
+		log.debug "nodes ist nicht null"
+		nodes.each {
+			log.debug "nodes each funktioniert"
+			log.debug "aktion ist $action"
+			switch (action) {
+				case "Add"	:
+				if (count >= maxAssoz) {
+					log.warn "Group $group ist voll. Keine Aufnahme mehr möglich"
+				} else {	
+					log.debug "Add von $it"
+					cmds << zwave.associationV2.associationSet(groupingIdentifier:group, nodeId:hubitat.helper.HexUtils.hexStringToInt(it))
+					count = count + 1
+				}
+				break;
+				case "Remove":
+				if (count <= 0) {
+					log.warn "Group $group ist leer."
+				} else {
+					log.debug "Del von $it"
+					cmds << zwave.associationV2.associationRemove(groupingIdentifier:group, nodeId:hubitat.helper.HexUtils.hexStringToInt(it))
+					count =count - 1
+				}
+				break;
+				default:
+					log.debug "action nicht gefunden"
+			}
+		}
+	} else {
+		log.debug "nodes ist null"
+	}
+	
+	cmds << zwave.associationV2.associationGet(groupingIdentifier:group)
+	
+    secureSequence (cmds)
 }
