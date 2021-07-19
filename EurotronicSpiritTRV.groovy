@@ -32,6 +32,7 @@ metadata {
 		LCDtimeoutOptions << ["2"  : "2 Secunden"]														//0x02
 		LCDtimeoutOptions << ["3"  : "3 Secunden"]														//0x03
 		LCDtimeoutOptions << ["4"  : "4 Secunden"]														//0x04
+		LCDtimeoutOptions << ["5"  : "5 Secunden"]														//0x05
 		LCDtimeoutOptions << ["6"  : "6 Secunden"]														//0x06
 		LCDtimeoutOptions << ["7"  : "7 Secunden"]														//0x07
  		LCDtimeoutOptions << ["8"  : "8 Secunden"]														//0x08
@@ -729,8 +730,12 @@ metadata {
 					tempOffset << ["49"  : "Temperaturkorrektur um 4.9°C"]											//0x31
 					tempOffset << ["50"  : "Temperaturkorrektur um 5.0°C"]											//0x32					        
 				def msg = cmd.scaledConfigurationValue.toString()
-				tempOffset = msg
-				log.info "Gemessene Temperatur hat $msg}"
+				if (msg == "-128") {
+					log.info "${tempOffset[msg]}"
+				} else {
+					log.info "Gemessene Temperatur hat ${tempOffset[msg]}"
+				}
+				
 				sendEvent(name: "Configuration", value: (cnf + " 8"), displayed: true)
 				break;
 		}
@@ -960,7 +965,7 @@ metadata {
 				break;
 		}
 		if (eventValue != "") {
-			createEvent(name: "lock", value: eventValue, displayed: true)
+			sendEvent(name: "lock", value: eventValue, displayed: true)
 		} else {
 			if (debugLog) { 
 				log.debug "Wiederum Fehler in Protectionsreport, Protectstatus ist $cmd.protectionState"
@@ -1265,7 +1270,7 @@ def parse(String description) {
 	if (description.startsWith("Err")) {
 		result = createEvent(descriptionText: description, isStateChange: true)
 	} else {
-		def cmd = zwave.parse(description)
+		def cmd = zwave.parse(description,[0x85:2,0x59:1,0x20:1,0x80:1,0x70:1,0x5A:1,0x72:1,0x31:5,0x26:1,0x71:8,0x73:1,0x75:1,0x98:2,0x40:3,0x43:3,0x55:2,0x86:2,0x5E:1]) //0x98:1 0x40:2 0x43:2 0x55:1 0x5E:2 from Hubitat
 		if (cmd) { 
             		result += zwaveEvent(cmd) 
         	} else { 
@@ -1290,7 +1295,7 @@ def lock(){
 	cmds << zwave.protectionV1.protectionSet(protectionState: 1)
     cmds << zwave.protectionV1.protectionGet()
     log.info "Thermostat gelockt"
-	sendEvent(name: "lock", value: "locked", displayed: true)
+	//sendEvent(name: "lock", value: "locked", displayed: true)
 	secureSequence(cmds)
 }
 
@@ -1299,7 +1304,7 @@ def unlock(){
 	cmds << zwave.protectionV1.protectionSet(protectionState: 0)
 	cmds << zwave.protectionV1.protectionGet()
     log.info "Thermostat ungelockt"
-	sendEvent(name: "lock", value: "unlocked", displayed: true)
+	//sendEvent(name: "lock", value: "unlocked", displayed: true)
 	secureSequence (cmds)
 }
 
@@ -1547,36 +1552,15 @@ def stringToHexList(String value) {
 }
 
 def configure() {
-	def LCDinvertL  		= stringToHexList (LCDinvert)
-	def LCDtimeoutL 		= stringToHexList (LCDtimeout)
-	def backlightL  		= stringToHexList (backlight)
-	def battNotificationL 	= stringToHexList (battNotification)
-	def tempReportL 		= stringToHexList (tempReport)
-	def valveReportL 		= stringToHexList (valveReport)
-	def windowOpenL 		= stringToHexList (windowOpen)
-	def tempOffsetL 		= stringToHexList (tempOffset)
 	def cmds = []
-	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDinvertL,		    parameterNumber:1, size:1)
-	cmds << zwave.configurationV1.configurationSet(configurationValue: LCDtimeoutL,		    parameterNumber:2, size:1)	
-	cmds << zwave.configurationV1.configurationSet(configurationValue: backlightL,		    parameterNumber:3, size:1)
-	cmds << zwave.configurationV1.configurationSet(configurationValue: battNotificationL, 	parameterNumber:4, size:1)
-	cmds << zwave.configurationV1.configurationSet(configurationValue: tempReportL,		    parameterNumber:5, size:1)	
-	cmds << zwave.configurationV1.configurationSet(configurationValue: valveReportL,	    parameterNumber:6, size:1)
-	cmds << zwave.configurationV1.configurationSet(configurationValue: windowOpenL,		    parameterNumber:7, size:1)
-    cmds << zwave.configurationV1.configurationSet(configurationValue: tempOffsetL,		    parameterNumber:8, size:1)
-    cmds << zwave.sensorMultilevelV3.sensorMultilevelGet()     						//get temperature
-	cmds << zwave.thermostatModeV2.thermostatModeGet()                              //get Mode
-	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 0x01)    //get temp heat
-	cmds << zwave.thermostatSetpointV2.thermostatSetpointGet(setpointType: 0x0B)    //get temp eco
-	cmds << zwave.switchMultilevelV1.switchMultilevelGet()                          //get valve position
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:1)               //get pamam - 1
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:2)               //get pamam - 2
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:3)               //get pamam - 3
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:4)               //get pamam - 4
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:5)               //get pamam - 5
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:6)               //get pamam - 6
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:7)               //get pamam - 7
-	cmds << zwave.configurationV1.configurationGet(parameterNumber:8)               //get pamam - 8
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (LCDinvert),		    parameterNumber:1, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (LCDtimeout),		parameterNumber:2, size:1)	
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (backlight),		    parameterNumber:3, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (battNotification), 	parameterNumber:4, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (tempReport),		parameterNumber:5, size:1)	
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (valveReport),	    parameterNumber:6, size:1)
+	cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (windowOpen),		parameterNumber:7, size:1)
+    cmds << zwave.configurationV1.configurationSet(configurationValue: stringToHexList (tempOffset),		parameterNumber:8, size:1)
 	sendEvent(name: "Configuration", value: "sent", displayed: true)
     log.info "Configure sent"
 	secureSequence(cmds)
