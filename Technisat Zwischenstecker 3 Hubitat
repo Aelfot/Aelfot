@@ -1,15 +1,11 @@
-import hubitat.helper.HexUtils
-
 metadata {
-	definition (name: "Technisat Zwischenstecker 3", namespace: "Aelfot", author: "Aelfot") {
+	definition (name: "Technisat Zwischenstecker 3", namespace: "Aelfot", author: "Ravil Rubashkin") {
 		capability "Sensor"
 		capability "CurrentMeter"		//amperage - NUMBER, unit:A
 		capability "EnergyMeter"		//energy - NUMBER, unit:kWh
 		capability "PowerMeter"			//power - NUMBER, unit:W
 		capability "VoltageMeasurement"	//voltage - NUMBER, unit:V; frequency - NUMBER, unit:Hz
-		
-		capability "Configuration"
-		
+				
 		capability "Polling"
 		
 		capability "Actuator"
@@ -71,16 +67,16 @@ def parse(String description) {
 def configure() {
 	if (log) {log.trace "configure"}
 	def cmds = []
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter1 / 5),							parameterNumber:1, size:2).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter2 / 10),							parameterNumber:2, size:2).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter3 * 100),							parameterNumber:3, size:2).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter4),								parameterNumber:4, size:2).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: hubitat.helper.HexUtils.hexStringToInt(parameter5),	parameterNumber:5, size:1).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: hubitat.helper.HexUtils.hexStringToInt(parameter6),	parameterNumber:6, size:1).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: hubitat.helper.HexUtils.hexStringToInt(parameter7),	parameterNumber:7, size:1).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter8),								parameterNumber:8, size:2).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: hubitat.helper.HexUtils.hexStringToInt(parameter9),	parameterNumber:9, size:1).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: hubitat.helper.HexUtils.hexStringToInt(parameter11),	parameterNumber:11, size:1).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter1 / 5),	parameterNumber:1, size:2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter2 / 10),	parameterNumber:2, size:2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter3 * 100),	parameterNumber:3, size:2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter4),		parameterNumber:4, size:2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: parameter5.toInteger(),    	parameterNumber:5, size:1).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: parameter6.toInteger(),    	parameterNumber:6, size:1).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: parameter7.toInteger(),    	parameterNumber:7, size:1).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: Math.round(parameter8),    	parameterNumber:8, size:2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: parameter9.toInteger(),    	parameterNumber:9, size:1).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(scaledConfigurationValue: parameter11.toInteger(),    	parameterNumber:11, size:1).format()
 	sendToDevice(cmds)
 }
 
