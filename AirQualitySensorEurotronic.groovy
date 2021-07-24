@@ -118,7 +118,7 @@ void updated() {
 	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:5,	size:1,	scaledConfigurationValue: parameter5.toInteger()).format()
 	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:6,	size:1,	scaledConfigurationValue: parameter6.toInteger()).format()
 	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:7,	size:1,	scaledConfigurationValue: parameter7.toInteger()).format()
-	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: parameter8 ? 1 : 2).format()
+	cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: parameter8 ? 1 : 0).format()
 	if (state.actualAssociation1 == null || state.actualAssociation2 == null) {
 		cmds << new hubitat.zwave.commands.associationv2.AssociationGet(groupingIdentifier:1)
 		cmds << new hubitat.zwave.commands.associationv2.AssociationGet(groupingIdentifier:2)
@@ -207,11 +207,11 @@ def zwaveEvent (hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelRepor
 		default:
 		log.debug "Sensor Multilevel unhandled Report: ${cmd}"
 	}
+	if (lg) {log.debug "${device} hat ${map} gemessen"}
 	createEvent(map)
 }
 
 def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
-	log.info "Home-Health hat Niveau ${cmd.eventParameter[0]} gemeldet"
 	if (cmd.notificationType == 0x0D) {
 		if (cmd.event == 0x06) {
 			if (cmd.eventParametersLength != 0) {
@@ -237,12 +237,11 @@ def zwaveEvent(hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 		}
 	} else {
 		log.warn "Warnung!!! Notifikation hat keine Home-Health gemeldet, algemeiner Fehler!"
-	}
-	log.info "Notifikation $cmd"		
+	}	
 }
 
-private notifity (String sensor,int value) { 
-	def msg = [:]
+private notifity (String sensor,int value) {
+    def msg = [:]
 	switch (value) {    
 		case 0:    
 		msg.value = "hervorragend"
