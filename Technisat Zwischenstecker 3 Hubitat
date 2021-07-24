@@ -1,7 +1,7 @@
 import hubitat.helper.HexUtils
 
 metadata {
-	definition (name: "Schnuler", namespace: "Schnuler", author: "Schnuler") {
+	definition (name: "Technisat Zwischenstecker 3", namespace: "Aelfot", author: "Aelfot") {
 		capability "Sensor"
 		capability "CurrentMeter"		//amperage - NUMBER, unit:A
 		capability "EnergyMeter"		//energy - NUMBER, unit:kWh
