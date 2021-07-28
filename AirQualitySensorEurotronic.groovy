@@ -1,3 +1,5 @@
+import hubitat.device.HubAction
+
 metadata {
 	definition(name: "Eurotronic Sensor", namespace: "aelfot", author: "Ravil Rubashkin") { 
 		capability "CarbonDioxideMeasurement"		//carbonDioxide - NUMBER, unit:ppm
@@ -17,9 +19,7 @@ metadata {
 										[name: "Z-Wave Node",		type:"NUMBER", 	description: "Enter the node number (Integer) associated with the node"], 
 										[name: "Action", 			type:"ENUM", 	constraints: ["Add", "Remove"]]]        
 
-		fingerprint mfr:"0148", prod:"0005"
-		fingerprint deviceId: "0001", inClusters: "0x5E, 0x85, 0x70, 0x59, 0x55, 0x31, 0x71, 0x86, 0x72, 0x5A, 0x73, 0x98, 0x9F, 0x6C, 0x7A"
-		fingerprint deviceId: "0001", inClusters: "0x5E, 0x6C, 0x55, 0x98, 0x9F", secureInClusters: "0x86, 0x85, 0x70, 0x59, 0x72, 0x31, 0x71, 0x5A, 0x73, 0x7A" 
+		fingerprint  mfr:"0148", prod:"0005", deviceId:"0001", inClusters:"0x5E,0x6C,0x55,0x98,0x9F"
 		}	
 
 	def tempEinheit = [:]
@@ -68,8 +68,8 @@ metadata {
         input name: "parameter8",	type: "bool",		title: "Luftgüte per LED signalisieren", 	description: "Default: Luftgüte per Led signalisieren",	defaultValue: true   
 		input name: "lg", 			type: "bool",		title: "Enable debug message logging", 		description: "",										defaultValue: false
 	}
-
 }
+
 private getCommandClassVersion() {
 	[0x85:2,	//Association
 	 0x59:1,	//Association Grp Info
@@ -89,7 +89,7 @@ private getCommandClassVersion() {
 
 def parse(String description) {
 	def cmd = zwave.parse(description, getCommandClassVersion())
-	if (cmd) {        
+	if (cmd) {
 		return zwaveEvent(cmd)
     } else {
 		log.debug "Non-parsed event: ${description}"
