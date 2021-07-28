@@ -1,4 +1,3 @@
-//version 3.9
 metadata {
 	definition (name: "Eurotronic Spirit TRV", namespace: "aelfot", author: "Ravil Rubashkin") {
 		capability "Battery"
