@@ -1,13 +1,15 @@
 import groovy.transform.Field
+import hubitat.helper.HexUtils
+import hubitat.device.HubAction
 
 metadata {
 	definition(name: "Eurotronic Sensor", namespace: "aelfot", author: "Ravil Rubashkin") { 
-		capability "CarbonDioxideMeasurement"	//carbonDioxide - NUMBER, unit:ppm
-		capability "TemperatureMeasurement"		//temperature - NUMBER, unit:°F || °C
-		capability "RelativeHumidityMeasurement"//humidity - NUMBER, unit:%
+		capability "CarbonDioxideMeasurement"
+		capability "TemperatureMeasurement"
+		capability "RelativeHumidityMeasurement"
 		capability "Sensor"
 		capability "Polling"
-		capability "Configuration"				//nötig für associationstool von innovelli
+		capability "Configuration"
 
 		attribute "VOC",					"number"
 		attribute "DewPoint", 				"number"
@@ -393,11 +395,6 @@ void zwaveEvent(hubitat.zwave.Command cmd) {
 	log.debug "${device.displayName}: Unhandled: ${cmd}"
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Отправка сообщений на устройство
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Шифрование
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void sendToDevice(List<hubitat.zwave.Command> cmds, Long delay=300) {
     sendHubCommand(new hubitat.device.HubMultiAction(commands(cmds, delay), hubitat.device.Protocol.ZWAVE))
 }
@@ -409,11 +406,11 @@ void sendToDevice(hubitat.zwave.Command cmd, Long delay=300) {
 List<String> commands(List<hubitat.zwave.Command> cmds, Long delay=300) {
     return delayBetween(cmds.collect{ zwaveSecureEncap(it.format()) }, delay)
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 def setAssociationGroup(group, nodes, action, endpoint = null){
-	action = "${action}" == "1" ? "Add" : "${action}" == "0" ? "Remove" : "${action}" // convert 1/0 to Add/Remove
-	group  = "${group}" =~ /\d+/ ? (group as int) : group                             // convert group to int (if possible)
-	nodes  = [] + nodes ?: [nodes]                                                    // convert to collection if not already a collection
+	action = "${action}" == "1" ? "Add" : "${action}" == "0" ? "Remove" : "${action}"
+	group  = "${group}" =~ /\d+/ ? (group as int) : group
+	nodes  = [] + nodes ?: [nodes]
 	if (! nodes.every { it =~ /[0-9A-F]+/ }) {
 		log.error "${device.label?device.label:device.name}: invalid Nodes ${nodes}"
 		return
@@ -436,7 +433,7 @@ def setAssociationGroup(group, nodes, action, endpoint = null){
 			break
 		}
 	}
-	state."desiredAssociation${group}" = associations.unique() ///unique удаляет дубликаты, при указании в скобках фалсе не будет оригинал изменяться
+	state."desiredAssociation${group}" = associations.unique()
 	processAssociations()
 	return
 }
@@ -475,7 +472,7 @@ def processAssociations(){
 	sendToDevice (cmds)
 }
 
-def configure() { //заглушка так как программа ассоциации нуждается в этой опции
+def configure() {
 }
 
 def setAssociationGroup() {
