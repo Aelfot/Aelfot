@@ -13,8 +13,16 @@ metadata {
 		capability "Polling"
 		capability "SwitchLevel"
 
-		attribute "Notifity",			"string"
-		attribute "DeviceResetLocally",	"bool"
+		attribute "event",					"number"
+		attribute "eventParametersLength",	"number"
+		attribute "notificationStatus",		"number"
+		attribute "notificationType",		"number"
+		attribute "reserved",				"number"
+		attribute "sequence",				"bool"
+		attribute "v1AlarmLevel",			"number"
+		attribute "v1AlarmType",			"number"
+		attribute "Notifity",				"string"
+		attribute "DeviceResetLocally",		"bool"
 
 		command "manual"
 		command "lokaleBedinungDeaktiviert"
@@ -80,17 +88,36 @@ def zwaveEvent (hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 	resultat.name = "Notifity"
 	resultat.displayed = true
 	switch (cmd.notificationType) {
-		case 8:
-		if (cmd.eventParameter == []) 	{resultat.value = "Batterie gewechselt"}
-		if (cmd.eventParameter == [10]) {resultat.value = "25% Batterie verbleibend"}
-		if (cmd.eventParameter == [11]) {resultat.value = "15% Batterie verbleibend"}
+		case 0x08:
+		if (cmd.event == 0x0A) {
+			resultat.value = "25% Batterie verbleibend"
+		} else if (cmd.event == 0x0B) {
+			resultat.value = "15% Batterie verbleibend"
+		} else {
+			resultat.value = "Batterie gewechselt"
+		}
 		break;
-		case 9:
-		if (cmd.eventParameter == [])  {resultat.value = "Der Fehler wurde gerade behoben"}
-		if (cmd.eventParameter == [1]) {resultat.value = "Kein Schließpunkt gefunden"}
-		if (cmd.eventParameter == [2]) {resultat.value = "Keine Ventilbewegung möglich"}
-		if (cmd.eventParameter == [3]) {resultat.value = "Kein Ventilschließpunkt gefunden"}
-		if (cmd.eventParameter == [4]) {resultat.value = "Positionierung fehlgeschlagen"}
+		case 0x09:
+		if (cmd.event == 0x03) {
+			if (cmd.eventParametersLength != 0) {
+				switch (cmd.eventParameter[0]) {
+					case 0x01:
+					resultat.value = "Kein Schließpunkt gefunden"
+					break;
+					case 0x02:
+					resultat.value = "Keine Ventilbewegung möglich"
+					break;
+					case 0x03:
+					resultat.value = "Kein Ventilschließpunkt gefunden"
+					break;
+					case 0x04:
+					resultat.value = "Positionierung fehlgeschlagen"
+					break;
+				}
+			} else {
+				resultat.value = "Der Fehler wurde gerade behoben"
+			}
+		}
 		break;
 	}
 	if (lg) log.info"Notifikaiton ist ${cmd}"
@@ -318,7 +345,6 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 		cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:cmd.parameterNumber)
 		sendToDevice(cmds)
 	}
-	if (lg) log.info "Configuration von Parameter ${cmd.parameterNumber} hat den Wert ${cmd.scaledConfigurationValue}"
 }
 
 void setLevel(nextLevel) {
