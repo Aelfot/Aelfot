@@ -13,16 +13,8 @@ metadata {
 		capability "Polling"
 		capability "SwitchLevel"
 
-		attribute "event",					"number"
-		attribute "eventParametersLength",	"number"
-		attribute "notificationStatus",		"number"
-		attribute "notificationType",		"number"
-		attribute "reserved",				"number"
-		attribute "sequence",				"bool"
-		attribute "v1AlarmLevel",			"number"
-		attribute "v1AlarmType",			"number"
-		attribute "Notifity",				"string"
-		attribute "DeviceResetLocally",		"bool"
+		attribute "Notifity",			"string"
+		attribute "DeviceResetLocally",	"bool"
 
 		command "manual"
 		command "lokaleBedinungDeaktiviert"
