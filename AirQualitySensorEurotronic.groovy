@@ -256,66 +256,66 @@ void zwaveEvent(hubitat.zwave.commands.configurationv1.ConfigurationReport cmd){
 	switch (cmd.parameterNumber) {
 		case 1:
 		if (parameter1 != cmd.scaledConfigurationValue / 10) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:1,	size:1,	scaledConfigurationValue: Math.round(parameter1 * 10).toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 2:
 		if (Math.round(parameter2) != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:2,	size:1,	scaledConfigurationValue: Math.round(parameter2).toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 3:
 		if (parameter3.toInteger() != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:3,	size:1,	scaledConfigurationValue: parameter3.toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 4:
 		if (parameter4.toInteger() != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:4,	size:1,	scaledConfigurationValue: parameter4.toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 5:
 		if (parameter5.toInteger() != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:5,	size:1,	scaledConfigurationValue: parameter5.toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 6:
 		if (parameter6.toInteger() != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:6,	size:1,	scaledConfigurationValue: parameter6.toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 7:
 		if (parameter7.toInteger() != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:7,	size:1,	scaledConfigurationValue: parameter7.toInteger())
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		case 8:
 		if ((parameter8 ? 1 : 0) != cmd.scaledConfigurationValue) {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde nicht übernommen, erneuter Versuch"
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: parameter8 ? 1 : 0)
 		} else {
-			log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
+			if (lg) log.info "Configurationsparameter nummer ${cmd.parameterNumber} wurde erfolgreich übernommen"
 		}
 		break;
 		default:
