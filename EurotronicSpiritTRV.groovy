@@ -1,4 +1,6 @@
 import groovy.transform.Field
+import hubitat.helper.HexUtils
+import hubitat.device.HubAction
 
 metadata {
 	definition (name: "Eurotronic Spirit TRV", namespace: "aelfot", author: "Ravil Rubashkin") {
@@ -517,5 +519,5 @@ void fanAuto() {
 void fanCirculate() {
 }
 
-void setThermostatFanMode(fanmode) {
+void setThermostatFanMode(fanmode) {	
 }
