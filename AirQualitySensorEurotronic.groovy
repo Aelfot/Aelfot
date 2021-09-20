@@ -19,9 +19,9 @@ metadata {
 		attribute "DeviceResetLocally",		"bool"
 		attribute "groups", "number"
 
-		command "testNode",		[[name: "Power Level", type: "NUMBER", description: "Power 0-9"],
+		/*command "testNode",		[[name: "Power Level", type: "NUMBER", description: "Power 0-9"],
 													 [name: "Test Frame Count", type: "NUMBER", description: ""],
-													 [name: "Node ID", type: "STRING", description: ""]]
+													 [name: "Node ID", type: "STRING", description: ""]]*/
 		command "setAssociationGroup"
 		command "setAssociationGroup", [[name: "Group Number*",type:"NUMBER", description: "Provide the association group number to edit"], 
 										[name: "Z-Wave Node*", type:"STRING", description: "Enter the node number (in hex) associated with the node"],
@@ -222,15 +222,15 @@ void zwaveEvent (hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelRepo
 		map.unit = "ppm"
 		map.value = cmd.scaledSensorValue
 		if (map.value < 800) {
-			notifity ("CO2",1)
+			notifity ("CO2",0)
 		} else if (map.value < 1000) {
-			notifity ("CO2",2)
+			notifity ("CO2",1)
 		} else if (map.value < 1400) {
-			notifity ("CO2",3)
+			notifity ("CO2",2)
 		} else if (map.value < 2000) {
-			notifity ("CO2",4)
+			notifity ("CO2",3)
 		} else {
-			notifity ("CO2",5)
+			notifity ("CO2",4)
 		}
 		break;
 		case 0x27:
@@ -244,11 +244,9 @@ void zwaveEvent (hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelRepo
 			notifity ("VOC",2)
 		} else if (map.value < 2.200) {
 			notifity ("VOC",3)
-		} else if (map.value < 5.500) {
-			notifity ("VOC",4)
 		} else {
-			notifity ("VOC",5)
-		}
+			notifity ("VOC",4)
+		} 
 		break;
 		default:
 		log.warn "Sensor Multilevel unhandled Report: ${cmd}"
@@ -376,12 +374,9 @@ private notifity (String sensor,int value) {
 		msg.value = "mittelmäßig"
 		break;
 		case 3:
-		msg.value = "schlecht"
-		break;
-		case 4:
 		msg.value = "gesundheitsschädlich"
 		break;
-		case 5:
+		case 4:
 		msg.value = "lebensgefahr"
 		break;
 		default:
@@ -476,12 +471,12 @@ def processAssociations(){
 }
 
 def configure() {
-	sendEvent(name: "groups", value: 2)
 }
 
 def setAssociationGroup() {
 }
 
+/*
 void testNode (pLevel, frameCount, nodeID) {
 	if (pLevel < 0 || pLevel > 9) pLevel = 0
 	frameCount = frameCount.toInteger()
@@ -505,3 +500,4 @@ void zwaveEvent(hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeReport cmd
 		break
 	}
 }
+*/
