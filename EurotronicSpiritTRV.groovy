@@ -13,9 +13,13 @@ metadata {
 		capability "Polling"
 		capability "SwitchLevel"
 
+		attribute "ExterneTemperatur", "string"
 		attribute "Notifity",			"string"
 		attribute "DeviceResetLocally",	"bool"
 
+		command "testNode",		[[name: "Power Level", type: "NUMBER", description: "Power 0-9"],
+													 [name: "Test Frame Count", type: "NUMBER", description: ""],
+													 [name: "Node ID", type: "STRING", description: ""]]
 		command "manual"
 		command "lokaleBedinungDeaktiviert"
 
@@ -75,7 +79,7 @@ def parse(String description) {
 	}
 }
 
-def zwaveEvent (hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
+void zwaveEvent (hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 	def resultat = [:]
 	resultat.name = "Notifity"
 	resultat.displayed = true
@@ -116,7 +120,7 @@ def zwaveEvent (hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 	sendEvent(resultat)
 }
 
-def zwaveEvent (hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointReport cmd) {
+void zwaveEvent (hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointReport cmd) {
 	def resultat = [:]
 	resultat.value = cmd.scaledValue
 	resultat.unit = getTemperatureScale()
@@ -131,16 +135,16 @@ def zwaveEvent (hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointRe
 	sendEvent(resultat)
 }
 
-def zwaveEvent (hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
+void zwaveEvent (hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
 	if (lg) log.info "batteryreport ist ${cmd}"
-	sendEvent(name:"battery", value: cmd.batteryLevel)
+	sendEvent(name:"battery", value: cmd.batteryLevel, displayed: true)
 }
 
-def zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
+void zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
 	sendEvent(name:"DeviceResetLocally", value: true, displayed = true)
 }
 
-def zwaveEvent (hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
+void zwaveEvent (hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 	def resultat = [:]
 	resultat.name = "lock"
 	resultat.displayed = true
@@ -321,6 +325,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			} else {
 				if (lg) log.info "Parameter nummer 8 hat den Wert erfolgreich übernommen"
 				if (lg) log.info "Parameter nummer 9 hat den Wert erfolgreich übernommen"
+				sendEvent (name: "ExterneTemperatur", value: "true")
 			}
 		} else  {
 			if (cmd.scaledConfigurationValue != Math.round(parameter8.toFloat() * 10).toInteger()) {
@@ -329,6 +334,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			} else {
 				if (lg) log.info "Parameter nummer 8 hat den Wert erfolgreich übernommen"
 				if (lg) log.info "Parameter nummer 9 hat den Wert erfolgreich übernommen"
+				sendEvent (name: "ExterneTemperatur", value: "false")
 			}
 		}
 		break;
@@ -362,7 +368,7 @@ void setLevel(nextLevel) {
 
 void setCoolingSetpoint(temperature) {
 	def nextTemperature = getTemperature (temperature,"cool")
-	sendEvent(name: "coolingSetpoint", value: nextTemperature.toFloat())
+	sendEvent(name: "coolingSetpoint", value: nextTemperature.toFloat(), displayed: true)
 	def cmds = []
 	cmds << new hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointSet(precision:1, scale:0, scaledValue: nextTemperature, setpointType: 0x0B)
 	cmds << new hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointGet(setpointType:0x0B)
@@ -371,7 +377,7 @@ void setCoolingSetpoint(temperature) {
 
 void setHeatingSetpoint(temperature) {
 	def nextTemperature = getTemperature (temperature,"heat")
-	sendEvent(name: "heatingSetpoint", value: nextTemperature.toFloat())
+	sendEvent(name: "heatingSetpoint", value: nextTemperature.toFloat(), displayed: true)
 	def cmds = []
 	cmds << new hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointSet(precision:1, scale:0, scaledValue: nextTemperature, setpointType: 0x01)
 	cmds << new hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointGet(setpointType:0x01)
@@ -398,6 +404,9 @@ private getTemperature (setTemperature, modus) {
 			if (nextTemperature <= 8) {
 				nextTemperature = 8.0
 			}
+		}
+		if (setTemperature == currentTemperature) {
+			nextTemperature = setTemperature
 		}
 	} else {
 		def Integer temp = Math.round(setTemperature * 10)
@@ -496,10 +505,10 @@ void updated() {
 }
 
 void installed() {
-	sendEvent(name:"Notifity",						value:"Installed")
-	sendEvent(name:"DeviceResetLocally",			value:false)
-	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"])
-	sendEvent(name:"supportedThermostatModes",		value: ["off", "heat", "emergency heat", "cool", "manual"])
+	sendEvent(name:"Notifity",						value:"Installed", displayed: true)
+	sendEvent(name:"DeviceResetLocally",			value:false, displayed: true)
+	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"], displayed: true)
+	sendEvent(name:"supportedThermostatModes",		value: ["off", "heat", "emergency heat", "cool", "manual"], displayed: true)
 	def cmds = []
 	cmds << new hubitat.zwave.commands.protectionv1.ProtectionGet()
 	cmds << new hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointGet(setpointType:0x01)
@@ -534,8 +543,33 @@ void auto() {
 void fanAuto() {
 }
 
-void fanCirculate() {
+void fanCirculate() {	
 }
 
-void setThermostatFanMode(fanmode) {	
+void setThermostatFanMode(fanmode) {
+	sendEvent(name: "thermostatFanMode", value: "circulate", displayed: true)
+}
+
+void testNode (pLevel, frameCount, nodeID) {
+	if (pLevel < 0 || pLevel > 9) pLevel = 0
+	frameCount = frameCount.toInteger()
+	if (! nodeID =~ /[0-9A-F]+/) {
+		log.error "${device.label?device.label:device.name}: invalid Nodes ${nodes}"
+		return
+	}
+	sendToDevice (new hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeSet(powerLevel: pLevel.toInteger(), testFrameCount: frameCount.toInteger(), testNodeid: hubitat.helper.HexUtils.hexStringToInt(nodeID)))
+	sendEvent(name: "Testergebnis", value: "Anfrage gesendet")
+}
+
+void zwaveEvent(hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeReport cmd) {
+	switch (cmd.statusOfOperation) {
+		case 0:
+		sendEvent(name: "Testergebnis", value: "Failied für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
+		break
+		case 1:
+		sendEvent(name: "Testergebnis", value: "Erfolgreich angekommen ${cmd.testFrameCount} Pakete für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
+		break
+		case 2:
+		break
+	}
 }
