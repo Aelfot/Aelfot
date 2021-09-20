@@ -17,7 +17,11 @@ metadata {
 		attribute "carbonDioxide-Niveau",	"enum", ["hervorragend","gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]
 		attribute "Home-Health",			"enum", ["gut","mittelmäßig","gesundheitsschädlich","lebensgefahr"]
 		attribute "DeviceResetLocally",		"bool"
+		attribute "groups", "number"
 
+		command "testNode",		[[name: "Power Level", type: "NUMBER", description: "Power 0-9"],
+													 [name: "Test Frame Count", type: "NUMBER", description: ""],
+													 [name: "Node ID", type: "STRING", description: ""]]
 		command "setAssociationGroup"
 		command "setAssociationGroup", [[name: "Group Number*",type:"NUMBER", description: "Provide the association group number to edit"], 
 										[name: "Z-Wave Node*", type:"STRING", description: "Enter the node number (in hex) associated with the node"],
@@ -149,7 +153,7 @@ void installed() {
 }
 
 void setDefaultAssociations() {
-	def hubitatHubID = String.format('%02x', zwaveHubNodeId).toUpperCase()
+	def hubitatHubID = String.format('%02x', zwaveHubNodeId.toInteger()).toUpperCase()
 	state.defaultG1 = [hubitatHubID]
 	state.defaultG2 = []
 }
@@ -164,6 +168,7 @@ def maxAssociationGroup(){
 
 void zwaveEvent(hubitat.zwave.commands.associationv2.AssociationGroupingsReport cmd) {
 	if (lg) log.info "${device.label?device.label:device.name}: Es wird ${cmd.supportedGroupings} Anzahl von Groupen"
+	sendEvent(name: "groups", value: cmd.supportedGroupings)
 	state.associationGroups = cmd.supportedGroupings
 }
 
@@ -171,7 +176,7 @@ void zwaveEvent(hubitat.zwave.commands.associationv2.AssociationReport cmd) {
 	def temp = []
 	if (cmd.nodeId != []) {
 		cmd.nodeId.each {
-			temp += it.toString().format( '%02x', it.toInteger() ).toUpperCase()
+			temp += it.toString().format('%02x', it.toInteger()).toUpperCase()
 		}
 	}
 	state."actualAssociation${cmd.groupingIdentifier}" = temp
@@ -407,7 +412,7 @@ List<String> commands(List<hubitat.zwave.Command> cmds, Long delay=300) {
     return delayBetween(cmds.collect{ zwaveSecureEncap(it.format()) }, delay)
 }
 
-def setAssociationGroup(group, nodes, action, endpoint = null){
+void setAssociationGroup(group, nodes, action, endpoint = null){
 	action = "${action}" == "1" ? "Add" : "${action}" == "0" ? "Remove" : "${action}"
 	group  = "${group}" =~ /\d+/ ? (group as int) : group
 	nodes  = [] + nodes ?: [nodes]
@@ -435,7 +440,6 @@ def setAssociationGroup(group, nodes, action, endpoint = null){
 	}
 	state."desiredAssociation${group}" = associations.unique()
 	processAssociations()
-	return
 }
 
 def processAssociations(){
@@ -447,7 +451,6 @@ def processAssociations(){
 			if(state."desiredAssociation${i}" != null || state."defaultG${i}") {
 				def refreshGroup = false
 				((state."desiredAssociation${i}"? state."desiredAssociation${i}" : [] + state."defaultG${i}") - state."actualAssociation${i}").each {
-					if (lg) log.info "desiredAssociation is ${state."desiredAssociation${i}"} und actualAssociation is ${state."defaultG${i}"} und defaultG is ${state."actualAssociation${i}"}"
 					if (it){
 						if (lg) log.info "${device.label?device.label:device.name}: Adding node $it to group $i"
 						cmds << new hubitat.zwave.commands.associationv2.AssociationSet(groupingIdentifier:i, nodeId:hubitat.helper.HexUtils.hexStringToInt(it))
@@ -473,9 +476,32 @@ def processAssociations(){
 }
 
 def configure() {
+	sendEvent(name: "groups", value: 2)
 }
 
 def setAssociationGroup() {
-	sendEvent(name:"Warnung", value:"Benutzen Sie für Association entsprechende App")
-	log.warn "Um Associationen herzustellen benutzen Sie Associationsapp von Innovelli"
+}
+
+void testNode (pLevel, frameCount, nodeID) {
+	if (pLevel < 0 || pLevel > 9) pLevel = 0
+	frameCount = frameCount.toInteger()
+	if (! nodeID =~ /[0-9A-F]+/) {
+		log.error "${device.label?device.label:device.name}: invalid Nodes ${nodes}"
+		return
+	}
+	sendToDevice (new hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeSet(powerLevel: pLevel.toInteger(), testFrameCount: frameCount.toInteger(), testNodeid: hubitat.helper.HexUtils.hexStringToInt(nodeID)))
+	sendEvent(name: "Testergebnis", value: "Anfrage gesendet")
+}
+
+void zwaveEvent(hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeReport cmd) {
+	switch (cmd.statusOfOperation) {
+		case 0:
+		sendEvent(name: "Testergebnis", value: "Failied für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
+		break
+		case 1:
+		sendEvent(name: "Testergebnis", value: "Erfolgreich angekommen ${cmd.testFrameCount} Pakete für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
+		break
+		case 2:
+		break
+	}
 }
