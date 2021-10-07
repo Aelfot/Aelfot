@@ -17,9 +17,7 @@ metadata {
 		attribute "Notifity",			"string"
 		attribute "DeviceResetLocally",	"bool"
 
-		command "testNode",		[[name: "Power Level", type: "NUMBER", description: "Power 0-9"],
-													 [name: "Test Frame Count", type: "NUMBER", description: ""],
-													 [name: "Node ID", type: "STRING", description: ""]]
+		command "SendTemperature", [[name: "Temperature", type: "NUMBER", description:""]]
 		command "manual"
 		command "lokaleBedinungDeaktiviert"
 
@@ -156,7 +154,7 @@ void zwaveEvent (hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 		resultat.value = "locked"
 		break;
 		case 2:
-		resultat.value = "lokale Bedinung deaktiviert" //"unknown"
+		resultat.value = "lokale Bedinung deaktiviert"
 		break;
 	}
 	if (resultat.value != null) {sendEvent(resultat)}
@@ -470,7 +468,6 @@ void poll() {
 	def cmds = []
 	cmds << new hubitat.zwave.commands.switchmultilevelv3.SwitchMultilevelGet()
 	cmds << new hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelGet(sensorType:1)
-	cmds << new hubitat.zwave.commands.batteryv1.BatteryGet()
 	sendToDevice(cmds)
 	if (lg) log.info "Polling"
 }
@@ -550,26 +547,8 @@ void setThermostatFanMode(fanmode) {
 	sendEvent(name: "thermostatFanMode", value: "circulate", displayed: true)
 }
 
-void testNode (pLevel, frameCount, nodeID) {
-	if (pLevel < 0 || pLevel > 9) pLevel = 0
-	frameCount = frameCount.toInteger()
-	if (! nodeID =~ /[0-9A-F]+/) {
-		log.error "${device.label?device.label:device.name}: invalid Nodes ${nodes}"
-		return
-	}
-	sendToDevice (new hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeSet(powerLevel: pLevel.toInteger(), testFrameCount: frameCount.toInteger(), testNodeid: hubitat.helper.HexUtils.hexStringToInt(nodeID)))
-	sendEvent(name: "Testergebnis", value: "Anfrage gesendet")
-}
-
-void zwaveEvent(hubitat.zwave.commands.powerlevelv1.PowerlevelTestNodeReport cmd) {
-	switch (cmd.statusOfOperation) {
-		case 0:
-		sendEvent(name: "Testergebnis", value: "Failied für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
-		break
-		case 1:
-		sendEvent(name: "Testergebnis", value: "Erfolgreich angekommen ${cmd.testFrameCount} Pakete für die Node ${cmd.testNodeid.toString().format('%02x', cmd.testNodeid.toInteger()).toUpperCase()}")
-		break
-		case 2:
-		break
-	}
+void SendTemperature(temperature) {
+	def Integer x = Math.round(temperature * 100) % 256
+	def Integer y = (Math.round(temperature * 100) - x) / 256	
+	sendToDevice(new hubitat.zwave.commands.sensormultilevelv10.SensorMultilevelReport(precision:2,scale:0,sensorType:1,sensorValue:[y,x],size:2,scaledSensorValue:(Math.round(temperature * 100)/100).toBigDecimal()))
 }
