@@ -1,0 +1,817 @@
+metadata {
+	definition (name: "Fibaro Motion Sensor ZW5", namespace: "Aelfot", author: "Aelfot") {
+		capability "Battery"
+		capability "Illuminance Measurement"
+		capability "Motion Sensor"
+		capability "Sensor"
+		capability "Tamper Alert"
+		capability "Temperature Measurement"
+		capability "Three Axis"
+		
+		attribute "Vibrationsintensitaet", "number"
+		attribute "Reset",	"bool"
+
+		fingerprint  mfr:"010F", prod:"0801", deviceId:"1002", inClusters:"0x5E,0x86,0x72,0x59,0x80,0x73,0x56,0x22,0x31,0x98,0x7A" 
+	}
+	
+	def bewegungBlindzeit = [:]
+		bewegungBlindzeit << [0	: "0,5 Sekunde"]
+		bewegungBlindzeit << [1	: "1 Sekunde"]
+		bewegungBlindzeit << [2	: "1,5 Sekunden"]
+		bewegungBlindzeit << [3	: "2 Sekunden"]
+		bewegungBlindzeit << [4	: "2,5 Sekunden"]
+		bewegungBlindzeit << [5	: "3 Sekunden"]
+		bewegungBlindzeit << [6	: "3,5 Sekunden"]
+		bewegungBlindzeit << [7	: "4 Sekunden"]
+		bewegungBlindzeit << [8	: "4,5 Sekunden"]
+		bewegungBlindzeit << [9	: "5 Sekunden"]
+		bewegungBlindzeit << [10: "5,5 Sekunden"]
+		bewegungBlindzeit << [11: "6 Sekunden"]
+		bewegungBlindzeit << [12: "6,5 Sekunden"]
+		bewegungBlindzeit << [13: "7 Sekunden"]
+		bewegungBlindzeit << [14: "7,5 Sekunden"]
+		bewegungBlindzeit << [15: "8 Sekunden"]
+	
+	def bewegungImpulszahl = [:]
+		bewegungImpulszahl << [0	: "1 Impuls"]
+		bewegungImpulszahl << [1	: "2 Impulse"]
+		bewegungImpulszahl << [2	: "3 Impulse"]
+		bewegungImpulszahl << [3	: "4 Impulse"]
+	
+	def bewegungZeitfenster = [:]
+		bewegungZeitfenster << [0	: "4 Sekunden"]
+		bewegungZeitfenster << [1	: "8 Sekunden"]
+		bewegungZeitfenster << [2	: "12 Sekunden"]
+		bewegungZeitfenster << [3	: "16 Sekunden"]
+	
+	def bewegungModus = [:]
+		bewegungModus << [0	: "immer aktiv"]
+		bewegungModus << [1	: "nur tagsüber aktiv"]
+		bewegungModus << [2	: "nur in der Nacht aktiv"]
+	
+	def basicBefehl = [:]
+		basicBefehl << [0	: "On und Off wird gesendet"]
+		basicBefehl << [1	: "nur On wird gesendet"]
+		basicBefehl << [2	: "nur Off wird gesendet"]
+	
+	def assozVerschl = [:]
+		assozVerschl << [0	: "keine Gruppe"]
+		assozVerschl << [1	: "Motion"]
+		assozVerschl << [2	: "Tamper"]
+		assozVerschl << [3	: "Tamper, Motion"]
+		assozVerschl << [4	: "Motion BC"]
+		assozVerschl << [5	: "Motion BC, Motion"]
+		assozVerschl << [6	: "Motion BC, Tamper"]
+		assozVerschl << [7	: "Motion BC, Tamper, Motion"]
+		assozVerschl << [8	: "Tamper BC"]
+		assozVerschl << [9	: "Tamper BC, Motion"]
+		assozVerschl << [10	: "Tamper BC, Tamper"]
+		assozVerschl << [11	: "Tamper BC, Tamper, Motion"]
+		assozVerschl << [12	: "Tamper BC, Motion BC"]
+		assozVerschl << [13	: "Tamper BC, Motion BC, Motion"]
+		assozVerschl << [14	: "Tamper BC, Motion BC, Tamper"]
+		assozVerschl << [15	: "Tamper BC, Motion BC, Tamper, Motion"]
+	
+	def tamperModus = [:]
+		tamperModus << [0	: "nur Manipulationsalarm"]
+		tamperModus << [1	: "Manipulationsalarm- und Erdbebenmelder"]
+		tamperModus << [2	: "Manipulation und Raumorientierung"]
+	
+	def tamperReset = [:]
+		tamperReset << [0	: "Reset nicht senden"]
+		tamperReset << [1	: "Reset senden"]
+	
+	def tamperGruppe = [:]
+		tamperGruppe << [0	: "Assotiantionsgruppe 3"]
+		tamperGruppe << [1	: "Assotiantionsgruppe 5"]
+	
+	def tamperBCModus = [:]
+		tamperBCModus << [0	: "An die Gruppe 5"]
+		tamperBCModus << [1	: "in Broadcast Modus"]
+	
+	def temperaturDelta = [:]
+		temperaturDelta << [0	: "aus"]
+		temperaturDelta << [1	: "0.1°C"]
+		temperaturDelta << [2	: "0.2°C"]
+		temperaturDelta << [3	: "0.3°C"]
+		temperaturDelta << [4	: "0.4°C"]
+		temperaturDelta << [5	: "0.5°C"]
+		temperaturDelta << [6	: "0.6°C"]
+		temperaturDelta << [7	: "0.7°C"]
+		temperaturDelta << [8	: "0.8°C"]
+		temperaturDelta << [9	: "0.9°C"]
+		temperaturDelta << [10	: "1.0°C"]
+		temperaturDelta << [11	: "1.1°C"]
+		temperaturDelta << [12	: "1.2°C"]
+		temperaturDelta << [13	: "1.3°C"]
+		temperaturDelta << [14	: "1.4°C"]
+		temperaturDelta << [15	: "1.5°C"]
+		temperaturDelta << [16	: "1.6°C"]
+		temperaturDelta << [17	: "1.7°C"]
+		temperaturDelta << [18	: "1.8°C"]
+		temperaturDelta << [19	: "1.9°C"]
+		temperaturDelta << [20	: "2.0°C"]
+	
+	def motionLedModus = [:]
+		motionLedModus << [0	: "LED inaktiv"]
+		motionLedModus << [1	: "Farbe ist temperaturabhängig. 1 Mal lang"]
+		motionLedModus << [2	: "LED leuchtet 10 Sekunden."]
+		motionLedModus << [3	: "Weiß. 1 Mal lang"]
+		motionLedModus << [4	: "Rot. 1 Mal lang"]
+		motionLedModus << [5	: "Grün. 1 Mal lang"]
+		motionLedModus << [6	: "Blau. 1 Mal lang"]
+		motionLedModus << [7	: "Gelb. 1 Mal lang"]
+		motionLedModus << [8	: "Cyan. 1 Mal lang"]
+		motionLedModus << [9	: "Magenta. 1 Mal lang"]
+		motionLedModus << [10	: "Farbe ist temperaturabhängig. 1 lang, weiter 1 kurz"]
+		motionLedModus << [11	: "LED leuchtet 10 Sekunden, weiter + 10 Sekunden"]
+		motionLedModus << [12	: "Weiß. 1 lang, weiter 1 kurz"]
+		motionLedModus << [13	: "Rot. 1 lang, weiter 1 kurz"]
+		motionLedModus << [14	: "Grün. 1 lang, weiter 1 kurz"]
+		motionLedModus << [15	: "Blau. 1 lang, weiter 1 kurz"]
+		motionLedModus << [16	: "Grün. 1 lang, weiter 1 kurz"]
+		motionLedModus << [17	: "Cyan. 1 lang, weiter 1 kurz"]
+		motionLedModus << [18	: "Magenta. 1 lang, weiter 1 kurz"]
+		motionLedModus << [19	: "Farbe ist temperaturabhängig. 1 lang, weiter 2 kurz"]
+		motionLedModus << [20	: "Weiß. 1 lang, weiter 2 kurz"]
+		motionLedModus << [21	: "Rot. 1 lang, weiter 2 kurz"]
+		motionLedModus << [22	: "Grün. 1 lang, weiter 2 kurz"]
+		motionLedModus << [23	: "Blau. 1 lang, weiter 2 kurz"]
+		motionLedModus << [24	: "Grün. 1 lang, weiter 2 kurz"]
+		motionLedModus << [25	: "Cyan. 1 lang, weiter 2 kurz"]
+		motionLedModus << [26	: "Magenta. 1 lang, weiter 2 kurz"]
+	
+	def tamperAlamrLED = [:]
+		tamperAlamrLED << [0	: "aus"]
+		tamperAlamrLED << [1	: "an"]
+
+	preferences {
+		input name:"param0",	type:"number",	defaultValue:7200,	range:"1..65535",				title:"Wake up Intervall",			description:"Wie oft wacht der Sensor auf (1-65535 Sekunden)"
+		input name:"param1",	type:"number",	defaultValue:15,	range:"8..255",					title:"Motion Empf.",				description:"je niedrige, desto empfindlicher. Möglich 8-255"
+		input name:"param2",	type:"enum",	defaultValue:15,	options:bewegungBlindzeit,		title:"Motion Blindzeit",			description:"für die Zeit 'Blind' für Motion"
+		input name:"param3",	type:"enum",	defaultValue:1,		options:bewegungImpulszahl,		title:"Motion Impulszahl",			description:"Je höher der Wert, desto unempfindlicher ist der PIR-Sensor"
+		input name:"param4",	type:"enum",	defaultValue:2,		options:bewegungZeitfenster,	title:"Motion Zeitfenster",			description:"Je höher der Wert, desto empfindlicher ist der PIR-Sensor"
+		input name:"param6",	type:"number",	defaultValue:30,	range:"1..32767",				title:"Motion Zurücksetz.",			description:"Wann Bewegungsalarm gelöscht wird (1-32767 Sekunden)"
+		input name:"param8",	type:"enum",	defaultValue:0,		options:bewegungModus,			title:"Motion Modus",				description:"Zu welcher Tageszeit Motionsensor aktiv"
+		input name:"param9",	type:"number",	defaultValue:200,	range:"1..32767",				title:"Lichtstärke für Tag",		description:"Lichtintänsistätsgrenze zwischen Tag/Nacht (1-32767 Lux)"
+		input name:"param12",	type:"enum",	defaultValue:0,		options:basicBefehl,			title:"Assoz.2 sendet:",			description:"Welche Befehle werden in Assoziationsgruppe 2 gesendet"
+		input name:"param14",	type:"number",	defaultValue:255,	range:"0..255",					title:"Befehl On ist:",				description:"Befehl 'On' kann hier definiert werden (0-255)"
+		input name:"param16",	type:"number",	defaultValue:0,		range:"0..255",					title:"Befehl Off ist:",			description:"Befehl 'Off' kann hier definiert werden (0-255)"
+		input name:"param18",	type:"enum",	defaultValue:15,	options:assozVerschl,			title:"Verschl. für:",				description:"Welche Assotiationsgruppen werden verschlüsselt"
+		input name:"param20",	type:"number",	defaultValue:20,	range:"0..121",					title:"Tamper sensitivität",		description:"Ab welcher Beschleunigung kommt Alarm (0-121)"
+		input name:"param22",	type:"number",	defaultValue:30,	range:"1..32767",				title:"Tamper Zurücksetz.",			description:"Wann wird Tamperalarm zurückgesetzt (1-32767 Sekunden)"
+		input name:"param24",	type:"enum",	defaultValue:0,		options:tamperModus,			title:"Tamper Modus",				description:""
+		input name:"param25",	type:"enum",	defaultValue:1,		options:tamperReset,			title:"Tamper Reset senden",		description:"Wird Tamperalarm zurückgesetzt?"
+		input name:"param28",	type:"enum",	defaultValue:0,		options:tamperGruppe,			title:"Tamper an die Gruppe",		description:"An welche Assotiationsgruppe wird Tamperalarm gesendet"
+		input name:"param29",	type:"enum",	defaultValue:0,		options:tamperBCModus,			title:"Tamper nicht vershcl.",		description:"Geräte ohne Z-wave+ brauchen BC-Modus"
+		input name:"param40",	type:"number",	defaultValue:200,	range:"0..32767",				title:"Illuminancedelta",			description:"Nachricht, wenn sich Illuminance um angegebenen Wert ändert (0-32767 Lux)"
+		input name:"param42",	type:"number",	defaultValue:3600,	range:"0..32767",				title:"Illuminanceperiod",			description:"Wie oft wird Illuminancewert gesendet unabhängig von Änderung (0-32767 Secunden)"
+		input name:"param60",	type:"enum",	defaultValue:10,	options:temperaturDelta,		title:"Temperaturdelta",			description:"Nachricht, wenn sich Temperatur um angegebenen Wert ändert"
+		input name:"param62",	type:"number",	defaultValue:900,	range:"0..32767",				title:"Temperaturmessung",			description:"Wie oft wird Temperaturwert gemessen (0-32767 Secunden)"
+		input name:"param64",	type:"number",	defaultValue:0,		range:"0..32767",				title:"Temperaturperiod",			description:"wie oft wird Temperaturwert desendet, unabhängig von Änderung (0-32767 Secunden)"
+		input name:"param66",	type:"number",	defaultValue:0,		range:"-1000..1000",			title:"Temperatufoffset",			description:"Temperaturkorrektur, in Decigrad (10 = 0.1°C)"
+		input name:"param80",	type:"enum",	defaultValue:10,	options:motionLedModus,			title:"Led bei Motion",				description:"Wie meldet LED die Bewegungserkennung"
+		input name:"param81",	type:"number",	defaultValue:50,	range:"0..100",					title:"Led Helligkeit bei Motion",	description:"Wie Hell blinkt LED bei Bewegungsekrennung bei 0 weitere Parameter"
+		if (param81 == 0) {
+			input name:"param82",	type:"number",	defaultValue:100,	range:"0..${param83}",		title:"Helligkeit für 1% LED",		description:"Bis angegebene Beleuchtungsstärke wird LED auf 1% eingestellt (0 bis nächster Parameter Lux)"
+			input name:"param83",	type:"number",	defaultValue:1000,	range:"${param82}..32767",	title:"Helligkeit für 100% LED",	description:"Über die angegebene Beleuchtungsstärke wird LED auf 100% eingestellt (vom vorherigem Parameter bis 32767 Lux)"
+		}
+		if (param80 == 1 || param80 == 10 || param80 == 19) {
+			input name:"param86",	type:"number",	defaultValue:18,	range:"0..${param87}",		title:"Temperatur für Blau-LED",	description:"Ab der Temperatur wird LED Blau"
+			input name:"param87",	type:"number",	defaultValue:28,	range:"${param86}..255",	title:"Temperatur für Rot-LED",		description:"Ab der Temperatur wird LED Rot"
+		}
+		input name:"param89",	type:"enum",	defaultValue:1,		options:tamperAlamrLED,			title:"Tamperalarm per LED melden",	description:"Wird per LED Tamper-Alarm gemeldet?"
+		input name:"lg",		type:"bool",	defaultValue:0,		title:"Log",	description:""
+	}
+}
+
+private Map CommandClassVersion() {
+	[0x9C:1,//Sensor Alarm
+	0x22:1,	//Application Status
+	0x85:2,	//Association V2
+	0x59:1,	//Association Group Information
+	0x20:1,	//Basic
+	0x80:1,	//Battery
+	0x30:1,	//Sensor Binary
+	0x70:2,	//Configuration V2
+	0x56:1,	//Crc 16 Encap
+	0x5A:1,	//Device Reset Locally
+	0x7A:3,	//Firmware Update Md V3
+	0x72:2,	//Manufacturer Specific V2
+	0x8E:2,	//Multi Channel Association V2
+	0x8F:1,	//Multi Command
+	0x31:5,	//Sensor Multilevel V5
+	0x71:3,	//Notification V3
+	0x73:1,	//Powerlevel
+	0x98:1,	//Security
+	0x86:1,	//Version
+	0x84:2,	//Wake Up V2
+	0x5E:2]	//Zwaveplus Info V2
+}
+
+List<hubitat.zwave.Command> configurationsnachricht (Integer parameter) {
+	def cmds = []
+	switch (parameter) {
+		case 0:
+			cmds << new hubitat.zwave.commands.wakeupv2.WakeUpIntervalSet(nodeid:zwaveHubNodeId,seconds:param0.toInteger())
+			cmds << new hubitat.zwave.commands.wakeupv2.WakeUpIntervalGet()
+			if (lg) log.info "Für Parameter0 wird Wert: ${param0.toInteger()} gesendet"
+		break;
+		case 1:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param1.toInteger(),		parameterNumber:1,	size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:1)
+			if (lg) log.info "Für Parameter1 wird Wert: ${param1.toInteger()} gesendet"
+		break;
+		case 2:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param2.toInteger(),		parameterNumber:2,	size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:2)
+			if (lg) log.info "Für Parameter2 wird Wert: ${param2.toInteger()} gesendet"
+		break;
+		case 3:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param3.toInteger(),		parameterNumber:3,	size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:3)
+			if (lg) log.info "Für Parameter3 wird Wert: ${param3.toInteger()} gesendet"
+		break;
+		case 4:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param4.toInteger(),		parameterNumber:4,	size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:4)
+			if (lg) log.info "Für Parameter4 wird Wert: ${param4.toInteger()} gesendet"
+		break;
+		case 6:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param6.toInteger(),		parameterNumber:6,	size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:6)
+			if (lg) log.info "Für Parameter6 wird Wert: ${param6.toInteger()} gesendet"
+		break;
+		case 8:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param8.toInteger(),		parameterNumber:8,	size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:8)
+			if (lg) log.info "Für Parameter8 wird Wert: ${param8.toInteger()} gesendet"
+		break;
+		case 9:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param9.toInteger(),		parameterNumber:9,	size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:9)
+			if (lg) log.info "Für Parameter9 wird Wert: ${param9.toInteger()} gesendet"
+		break;
+		case 12:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param12.toInteger(),	parameterNumber:12, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:12)
+			if (lg) log.info "Für Parameter12 wird Wert: ${param12.toInteger()} gesendet"
+		break;
+		case 14:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param14.toInteger(),	parameterNumber:14, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:14)
+			if (lg) log.info "Für Parameter14 wird Wert: ${param14.toInteger()} gesendet"
+		break;
+		case 16:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param16.toInteger(),	parameterNumber:16, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:16)
+			if (lg) log.info "Für Parameter16 wird Wert: ${param16.toInteger()} gesendet"
+		break;
+		case 18:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param18.toInteger(),	parameterNumber:18, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:18)
+			if (lg) log.info "Für Parameter18 wird Wert: ${param18.toInteger()} gesendet"
+		break;
+		case 20:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param20.toInteger(),	parameterNumber:20, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:20)
+			if (lg) log.info "Für Parameter20 wird Wert: ${param20.toInteger()} gesendet"
+		break;
+		case 22:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param22.toInteger(),	parameterNumber:22, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:22)
+			if (lg) log.info "Für Parameter22 wird Wert: ${param22.toInteger()} gesendet"
+		break;
+		case 24:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param24.toInteger(),	parameterNumber:24, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:24)
+			if (lg) log.info "Für Parameter24 wird Wert: ${param24.toInteger()} gesendet"
+		break;
+		case 25:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param25.toInteger(),	parameterNumber:25, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:25)
+			if (lg) log.info "Für Parameter25 wird Wert: ${param25.toInteger()} gesendet"
+		break;
+		case 28:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param28.toInteger(),	parameterNumber:28, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:28)
+			if (lg) log.info "Für Parameter28 wird Wert: ${param28.toInteger()} gesendet"
+		break;
+		case 29:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param29.toInteger(),	parameterNumber:29, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:29)
+			if (lg) log.info "Für Parameter29 wird Wert: ${param29.toInteger()} gesendet"
+		break;
+		case 40:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param40.toInteger(),	parameterNumber:40, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:40)
+			if (lg) log.info "Für Parameter40 wird Wert: ${param40.toInteger()} gesendet"
+		break;
+		case 42:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param42.toInteger(),	parameterNumber:42, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:42)
+			if (lg) log.info "Für Parameter42 wird Wert: ${param42.toInteger()} gesendet"
+		break;
+		case 60:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param60.toInteger(),	parameterNumber:60, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:60)
+			if (lg) log.info "Für Parameter60 wird Wert: ${param60.toInteger()} gesendet"
+		break;
+		case 62:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param62.toInteger(),	parameterNumber:62, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:62)
+			if (lg) log.info "Für Parameter62 wird Wert: ${param62.toInteger()} gesendet"
+		break;
+		case 64:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param64.toInteger(),	parameterNumber:64, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:64)
+			if (lg) log.info "Für Parameter64 wird Wert: ${param64.toInteger()} gesendet"
+		break;
+		case 66:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param66.toInteger(),	parameterNumber:66, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:66)
+			if (lg) log.info "Für Parameter66 wird Wert: ${param66.toInteger()} gesendet"
+		break;
+		case 80:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param80.toInteger(),	parameterNumber:80, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:80)
+			if (lg) log.info "Für Parameter80 wird Wert: ${param80.toInteger()} gesendet"
+		break;
+		case 81:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param81.toInteger(),	parameterNumber:81, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:81)
+			if (lg) log.info "Für Parameter80 wird Wert: ${param81.toInteger()} gesendet"
+		case 82:
+		if (param81.toInteger() == 0) {
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param82.toInteger(),	parameterNumber:82, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:82)
+			if (lg) log.info "Für Parameter82 wird Wert: ${param82.toInteger()} gesendet"
+		}
+		break;
+		case 83:
+		if (param81.toInteger() == 0) {
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param83.toInteger(),	parameterNumber:83, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:83)
+			if (lg) log.info "Für Parameter83 wird Wert: ${param83.toInteger()} gesendet"
+		}
+		break;
+		case 86:
+		if (param80.toInteger() == 1 || param80.toInteger() == 10 || param80.toInteger() == 19) {
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param86.toInteger(),	parameterNumber:86, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:86)
+			if (lg) log.info "Für Parameter86 wird Wert: ${param86.toInteger()} gesendet"
+		}
+		break;
+		case 87:
+		if (param80.toInteger() == 1 || param80.toInteger() == 10 || param80.toInteger() == 19) {
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param87.toInteger(),	parameterNumber:87, size:2)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:87)
+			if (lg) log.info "Für Parameter87 wird Wert: ${param87.toInteger()} gesendet"
+		}
+		break;
+		case 89:
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationSet(scaledConfigurationValue:	param89.toInteger(),	parameterNumber:89, size:1)
+			cmds << new hubitat.zwave.commands.configurationv2.ConfigurationGet(parameterNumber:89)
+			if (lg) log.info "Für Parameter89 wird Wert: ${param89.toInteger()} gesendet"
+		break;
+		default:
+		cmds << new hubitat.zwave.commands.batteryv1.BatteryGet()
+		if (lg) log.info "Etwas geht falsch ${parameter}"
+	}
+	return cmds
+}
+
+List<hubitat.zwave.Command> configurationCheck() {
+	def cmds = []
+	if (state.Parameter0 == null || param0.toInteger() != state.Parameter0) {
+		if (lg) log.debug "gespeicherter Wert 0 ${state.Parameter0} ist nicht gleich dem neuen ${param0.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(0)
+		} else {
+			cmds += configurationsnachricht(0)
+		}
+	}
+	if (state.Parameter1 == null || param1.toInteger() != state.Parameter1) {
+		if (lg) log.debug "gespeicherter Wert 1 ${state.Parameter1} ist nicht gleich ${param1.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(1)
+		} else {
+			cmds += configurationsnachricht(1)
+		}
+	}
+	if (state.Parameter2 == null || param2.toInteger() != state.Parameter2) {
+		if (lg) log.debug "gespeicherter Wert 2 ${state.Parameter2} ist nicht gleich ${param2.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(2)
+		} else {
+			cmds += configurationsnachricht(2)
+		}
+	}
+	if (state.Parameter3 == null || param3.toInteger() != state.Parameter3) {
+		if (lg) log.debug "gespeicherter Wert 3 ${state.Parameter3} ist nicht gleich ${param3.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(3)
+		} else {
+			cmds += configurationsnachricht(3)
+		}
+	}
+	if (state.Parameter4 == null || param4.toInteger() != state.Parameter4) {
+		if (lg) log.debug "gespeicherter Wert 4 ${state.Parameter4} ist nicht gleich ${param4.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(4)
+		} else {
+			cmds += configurationsnachricht(4)
+		}
+	}
+	if (state.Parameter6 == null || param6.toInteger() != state.Parameter6) {
+		if (lg) log.debug "gespeicherter Wert 6 ${state.Parameter6} ist nicht gleich ${param6.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(6)
+		} else {
+			cmds += configurationsnachricht(6)
+		}
+	}
+	if (state.Parameter8 == null || param8.toInteger() != state.Parameter8) {
+		if (lg) log.debug "gespeicherter Wert 8 ${state.Parameter8} ist nicht gleich ${param8.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(8)
+		} else {
+			cmds += configurationsnachricht(8)
+		}
+	}
+	if (state.Parameter9 == null || param9.toInteger() != state.Parameter9) {
+		if (lg) log.debug "gespeicherter Wert 9 ${state.Parameter9} ist nicht gleich ${param9.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(9)
+		} else {
+			cmds += configurationsnachricht(9)
+		}
+	}
+	if (state.Parameter12 == null || param12.toInteger() != state.Parameter12) {
+		if (lg) log.debug "gespeicherter Wert 12 ${state.Parameter12} ist nicht gleich ${param12.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(12)
+		} else {
+			cmds += configurationsnachricht(12)
+		}
+	}
+	if (state.Parameter14 == null || param14.toInteger() != state.Parameter14) {
+		if (lg) log.debug "gespeicherter Wert 14 ${state.Parameter14} ist nicht gleich ${param14.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(14)
+		} else {
+			cmds += configurationsnachricht(14)
+		}
+	}
+	if (state.Parameter16 == null || param16.toInteger() != state.Parameter16) {
+		if (lg) log.debug "gespeicherter Wert 16 ${state.Parameter16} ist nicht gleich ${param16.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(16)
+		} else {
+			cmds += configurationsnachricht(16)
+		}
+	}
+	if (state.Parameter18 == null || param18.toInteger() != state.Parameter18) {
+		if (lg) log.debug "gespeicherter Wert 18 ${state.Parameter18} ist nicht gleich ${param18.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(18)
+		} else {
+			cmds += configurationsnachricht(18)
+		}
+	}
+	if (state.Parameter20 == null || param20.toInteger() != state.Parameter20) {
+		if (lg) log.debug "gespeicherter Wert 20 ${state.Parameter20} ist nicht gleich ${param20.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(20)
+		} else {
+			cmds += configurationsnachricht(20)
+		}
+	}
+	if (state.Parameter22 == null || param22.toInteger() != state.Parameter22) {
+		if (lg) log.debug "gespeicherter Wert 22 ${state.Parameter22} ist nicht gleich ${param22.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(22)
+		} else {
+			cmds += configurationsnachricht(22)
+		}
+	}
+	if (state.Parameter24 == null || param24.toInteger() != state.Parameter24) {
+		if (lg) log.debug "gespeicherter Wert 24 ${state.Parameter24} ist nicht gleich ${param24.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(24)
+		} else {
+			cmds += configurationsnachricht(24)
+		}
+	}
+	if (state.Parameter25 == null || param25.toInteger() != state.Parameter25) {
+		if (lg) log.debug "gespeicherter Wert 25 ${state.Parameter25} ist nicht gleich ${param25.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(25)
+		} else {
+			cmds += configurationsnachricht(25)
+		}
+	}
+	if (state.Parameter28 == null || param28.toInteger() != state.Parameter28) {
+		if (lg) log.debug "gespeicherter Wert 28 ${state.Parameter28} ist nicht gleich ${param28.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(28)
+		} else {
+			cmds += configurationsnachricht(28)
+		}
+	}
+	if (state.Parameter29 == null || param29.toInteger() != state.Parameter29) {
+		if (lg) log.debug "gespeicherter Wert 29 ${state.Parameter29} ist nicht gleich ${param29.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(29)
+		} else {
+			cmds += configurationsnachricht(29)
+		}
+	}
+	if (state.Parameter40 == null || param40.toInteger() != state.Parameter40) {
+		if (lg) log.debug "gespeicherter Wert 40 ${state.Parameter40} ist nicht gleich ${param40.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(40)
+		} else {
+			cmds += configurationsnachricht(40)
+		}
+	}
+	if (state.Parameter42 == null || param42.toInteger() != state.Parameter42) {
+		if (lg) log.debug "gespeicherter Wert 42 ${state.Parameter42} ist nicht gleich ${param42.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(42)
+		} else {
+			cmds += configurationsnachricht(42)
+		}
+	}
+	if (state.Parameter60 == null || param60.toInteger() != state.Parameter60) {
+		if (lg) log.debug "gespeicherter Wert 60 ${state.Parameter60} ist nicht gleich ${param60.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(60)
+		} else {
+			cmds += configurationsnachricht(60)
+		}
+	}
+	if (state.Parameter62 == null || param62.toInteger() != state.Parameter62) {
+		if (lg) log.debug "gespeicherter Wert 62 ${state.Parameter62} ist nicht gleich ${param62.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(62)
+		} else {
+			cmds += configurationsnachricht(62)
+		}
+	}
+	if (state.Parameter64 == null || param64.toInteger() != state.Parameter64) {
+		if (lg) log.debug "gespeicherter Wert 64 ${state.Parameter64} ist nicht gleich ${param64.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(64)
+		} else {
+			cmds += configurationsnachricht(64)
+		}
+	}
+	if (state.Parameter66 == null || param66.toInteger() != state.Parameter66) {
+		if (lg) log.debug "gespeicherter Wert 66 ${state.Parameter66} ist nicht gleich ${param66.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(66)
+		} else {
+			cmds += configurationsnachricht(66)
+		}
+	}
+	if (state.Parameter80 == null || param80.toInteger() != state.Parameter80) {
+		if (lg) log.debug "gespeicherter Wert 50 ${state.Parameter80} ist nicht gleich ${param80.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(80)
+		} else {
+			cmds += configurationsnachricht(80)
+		}
+	}
+	if (state.Parameter81 == null || param81.toInteger() != state.Parameter81) {
+		if (lg) log.debug "gespeicherter Wert 81 ${state.Parameter81} ist nicht gleich ${param81.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(81)
+		} else {
+			cmds += configurationsnachricht(81)
+		}
+	}
+	if (param81.toInteger() == 0) {
+		if (state.Parameter82 == null || param82.toInteger() != state.Parameter82) {
+			if (lg) log.debug "gespeicherter Wert 82 ${state.Parameter82} ist nicht gleich ${param82.toInteger()}"
+			if (cmds == []) {
+				cmds = configurationsnachricht(82)
+			} else {
+				cmds += configurationsnachricht(82)
+			}
+		}
+		if (state.Parameter83 == null || param83.toInteger() != state.Parameter83) {
+			if (lg) log.debug "gespeicherter Wert 83 ${state.Parameter83} ist nicht gleich ${param83.toInteger()}"
+			if (cmds == []) {
+				cmds = configurationsnachricht(83)
+			} else {
+				cmds += configurationsnachricht(83)
+			}
+		}
+	}
+	if (param80.toInteger() == 1 || param80.toInteger() == 10 || param80.toInteger() == 19) {
+		if (state.Parameter86 == null || param86.toInteger() != state.Parameter86) {
+			if (lg) log.debug "gespeicherter Wert 86 ${state.Parameter86} ist nicht gleich ${param86.toInteger()}"
+			if (cmds == []) {
+				cmds = configurationsnachricht(86)
+			} else {
+				cmds += configurationsnachricht(86)
+		}
+		}
+		if (state.Parameter87 == null || param87.toInteger() != state.Parameter87) {
+			if (lg) log.debug "gespeicherter Wert 87 ${state.Parameter87} ist nicht gleich ${param87.toInteger()}"
+			if (cmds == []) {
+				cmds = configurationsnachricht(87)
+			} else {
+				cmds += configurationsnachricht(87)
+			}
+		}
+	}
+	if (state.Parameter89 == null || param89.toInteger() != state.Parameter89) {
+		if (lg) log.debug "gespeicherter Wert 89 ${state.Parameter89} ist nicht gleich ${param89.toInteger()}"
+		if (cmds == []) {
+			cmds = configurationsnachricht(89)
+		} else {
+			cmds += configurationsnachricht(89)
+		}
+	}
+	if (!cmds) {
+		cmds << new hubitat.zwave.commands.wakeupv2.WakeUpNoMoreInformation()
+		if (lg) log.debug "keine weiteren Nachrichten werden an den Sensor gesendet"
+	}
+	return cmds
+}
+
+def cfgSync () {
+	if (lg) log.trace "cfgSync gestartet"
+	def cmds = configurationCheck()
+	if (cmds) sendToDevice (cmds)
+}
+
+void sendToDevice(List<hubitat.zwave.Command> cmds, Long delay=300) {
+    sendHubCommand(new hubitat.device.HubMultiAction(commands(cmds, delay), hubitat.device.Protocol.ZWAVE))
+}
+
+void sendToDevice(hubitat.zwave.Command cmd, Long delay=300) {
+    sendHubCommand(new hubitat.device.HubAction(zwaveSecureEncap(cmd.format()), hubitat.device.Protocol.ZWAVE))
+}
+
+List<String> commands(List<hubitat.zwave.Command> cmds, Long delay=300) {
+    return delayBetween(cmds.collect{ zwaveSecureEncap(it.format()) }, delay)
+}
+
+def parse(String description) {
+	if (lg) log.debug "${device.displayName} - Parsing: ${description}"
+	def cmd = zwave.parse(description, CommandClassVersion())
+	if (cmd) {
+		if (lg) log.debug "${device.displayName} - Parsed: ${cmd}"
+		zwaveEvent(cmd)
+	}
+}
+
+def zwaveEvent(hubitat.zwave.commands.notificationv3.NotificationReport cmd) {
+	if (cmd.notificationType == 7) {
+		if (cmd.event == 0) {
+			sendEvent(name: (cmd.eventParameter[0] == 3) ? "tamper" : "motion", value: (cmd.eventParameter[0] == 3) ? "clear" :"inactive")
+		} else {
+			sendEvent(name: (cmd.event == 3) ? "tamper" : "motion", value: (cmd.event == 3) ? "detected" : "active")
+		}
+	}
+}
+
+def zwaveEvent(hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
+	sendEvent(name: "battery", value: cmd.batteryLevel.toString(), unit: "%", displayed: true, isStateChange: true)
+}
+
+def zwaveEvent(hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+	switch (cmd.sensorType as Integer) {
+		case 1:
+			def cmdScale = cmd.scale == 1 ? "F" : "C"
+			sendEvent(name: "temperature", unit: getTemperatureScale(), value: convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale, cmd.precision), displayed: true)
+			break
+		case 3:
+			sendEvent(name: "illuminance", value: cmd.scaledSensorValue.toInteger(), unit:"lx", displayed: true)
+			break
+		case [25,52,53,54]:
+            motionEvent(cmd.sensorType, cmd.scaledSensorValue )
+            break
+    }
+}
+
+private motionEvent(Integer sensorType, value) {
+	def bool = false
+	switch (sensorType) {
+		case 25:
+			sendEvent(name: "Vibrationsintensitaet", value: value , displayed: true)
+			break
+		case 52:
+			state.yAxis = value
+			bool = true
+			break
+		case 53:
+			state.zAxis = value
+			bool = true
+			break
+		case 54:
+			state.xAxis = value
+			bool = true
+			break
+	}
+	if (bool) runIn(2,"axisEvent")
+}
+
+private axisEvent() {
+	def xAxis = Math.round((state.xAxis as Float) * 100)
+	def yAxis = Math.round((state.yAxis as Float) * 100) // * 100 becaouse from what I can tell apps expect data in cm/s2
+	def zAxis = Math.round((state.zAxis as Float) * 100)
+	sendEvent(name: "threeAxis", value: "${xAxis},${yAxis},${zAxis}", isStateChange: true, displayed: true)
+}
+
+def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpNotification cmd) {
+	def cmds = []
+	cmds << new hubitat.zwave.commands.batteryv1.BatteryGet()
+    cmds << new hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelGet(sensorType: 1)
+    cmds += configurationCheck()
+	sendToDevice (cmds)
+}
+
+def zwaveEvent(hubitat.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	if (lg) log.trace "Configurationsreport aktiv mit ${cmd}"
+	switch (cmd.parameterNumber) {
+		case 1: if (param1.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter1 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 2: if (param2.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter2 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 3: if (param3.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter3 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 4: if (param4.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter4 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 6: if (param6.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter6 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 8: if (param8.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter8 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 9: if (param9.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter9 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 12: if (param12.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter12 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 14: if (param14.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter14 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 16: if (param16.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter16 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 18: if (param18.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter18 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 20: if (param20.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter20 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 22: if (param22.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter22 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 24: if (param24.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter24 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 25: if (param25.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter25 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 28: if (param28.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter28 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 29: if (param29.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter29 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 40: if (param40.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter40 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 42: if (param42.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter42 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 60: if (param60.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter60 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 62: if (param62.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter62 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 64: if (param64.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter64 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 66: if (param66.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter66 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 80: if (param80.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter80 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 81: if (param81.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter81 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 82: if (param82.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter82 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 83: if (param83.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter83 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 86: if (param86.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter86 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 87: if (param87.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter87 = cmd.scaledConfigurationValue.toInteger()
+		break
+		case 89: if (param89.toInteger() == cmd.scaledConfigurationValue.toInteger()) state.Parameter89 = cmd.scaledConfigurationValue.toInteger()
+		break
+	}
+	runIn(3,"cfgSync")
+}
+
+void zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
+	sendEvent(name:"Reset",value:true)
+}
+
+def zwaveEvent(hubitat.zwave.commands.wakeupv2.WakeUpIntervalReport cmd) {
+	if (lg) log.debug "${cmd}"
+	if (cmd.nodeid == zwaveHubNodeId && cmd.seconds == param0.toInteger()) {
+		state.Parameter0 = cmd.seconds.toInteger()
+		runIn(1,"cfgSync")
+	} else {
+		runIn(3,"cfgSync")
+	}
+}
