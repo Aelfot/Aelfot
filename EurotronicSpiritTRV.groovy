@@ -583,9 +583,7 @@ void updated() {
         alteEinstellung."${device.id}" = [:]
     } else {
         updatedCommand = []
-		if (lg) log.trace "Einstellungsvergleich, was geändert"
-        for (int i=1 ; i<=8 ; i++) {
-			if (lg) log.trace "überprüfung von parameter ${i}"
+		for (int i=1 ; i<=8 ; i++) {
 			switch (i) {
 				case 1:
 					if (parameter1 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
@@ -620,9 +618,10 @@ void updated() {
 
 void installed() {
     alteEinstellung."${device.id}" = [:]
-	sendEvent(name:"Notifity",						value:"Installed", displayed: true)
-	sendEvent(name:"DeviceResetLocally",			value:false, displayed: true)
-	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"], displayed: true)
+	sendEvent(name:"Notifity",						value:"Installed",                                          displayed: true)
+	sendEvent(name:"DeviceResetLocally",			value:false,                                                displayed: true)
+	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"],                                       displayed: true)
+    sendEvent(name: "thermostatFanMode",            value: "circulate",                                         displayed: true)
 	sendEvent(name:"supportedThermostatModes",		value: ["off", "heat", "emergency heat", "cool", "manual"], displayed: true)
 	def cmds = []
 	cmds << new hubitat.zwave.commands.protectionv1.ProtectionGet()
