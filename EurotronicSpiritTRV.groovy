@@ -13,14 +13,14 @@ metadata {
 
 		attribute "ExterneTemperatur",	"string"
 		attribute "Notifity",			"string"
-		attribute "DeviceResetLocally",	"bool"
 
-		command "ExternalSensorTemperature", [[name: "Temperature", type: "NUMBER", description:""]]
+		command "ExternalSensorTemperature", [[name: "Temperature", type: "NUMBER", description: ""]]
 		command "manual"
 		command "lokaleBedinungDeaktiviert"
 
-		fingerprint  mfr:"0148", prod:"0003", deviceId:"0001", inClusters:"0x5E,0x55,0x98,0x9F"
+		fingerprint  mfr: "0148", prod: "0003", deviceId: "0001", inClusters: "0x5E,0x55,0x98,0x9F"
 	}
+	
 	def batteriestatus =  [:]
 		batteriestatus << [0 : "Eventgesteuert"]
 		batteriestatus << [1 : "1 Mal täglich"]
@@ -109,7 +109,6 @@ void zwaveEvent (hubitat.zwave.commands.notificationv8.NotificationReport cmd) {
 		}
 		break;
 	}
-	if (lg) log.info"Notifikaiton ist ${cmd}"
 	sendEvent(resultat)
 }
 
@@ -124,17 +123,21 @@ void zwaveEvent (hubitat.zwave.commands.thermostatsetpointv3.ThermostatSetpointR
 	if (cmd.setpointType == 0x0B) {
 		resultat.name = "coolingSetpoint"
 	}
-	if (lg) log.info "Thermostat hat den Report ${cmd}"
 	sendEvent(resultat)
 }
 
 void zwaveEvent (hubitat.zwave.commands.batteryv1.BatteryReport cmd) {
-	if (lg) log.info "batteryreport ist ${cmd}"
 	sendEvent(name:"battery", value: cmd.batteryLevel, displayed: true)
 }
 
 void zwaveEvent(hubitat.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
-	sendEvent(name:"DeviceResetLocally", value: true, displayed = true)
+	sendEvent(name:"Notifity", value:"Deleted")
+	sendEvent(name:"thermostatMode", value:"off")
+	sendEvent(name:"level", value:0)
+	sendEvent(name:"temperature", value:0)
+	sendEvent(name:"thermostatOperatingState", value: "idle")
+	sendEvent(name:"coolingSetpoint", value:0)
+	sendEvent(name:"heatingSetpoint", value:0)
 }
 
 void zwaveEvent (hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
@@ -153,7 +156,6 @@ void zwaveEvent (hubitat.zwave.commands.protectionv1.ProtectionReport cmd) {
 		break;
 	}
 	if (resultat.value != null) {sendEvent(resultat)}
-	if (lg) log.info "protection report ist ${cmd}"
 }
 
 void zwaveEvent (hubitat.zwave.commands.thermostatmodev3.ThermostatModeReport cmd) {
@@ -178,7 +180,7 @@ void zwaveEvent (hubitat.zwave.commands.thermostatmodev3.ThermostatModeReport cm
 		break;
 	}
 	sendEvent(resultat)
-	sendToDevice (new hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelGet(sensorType:1))
+	if (parameter6 == 0) { sendToDevice (new hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelGet(sensorType:1)) }
 	if (lg) log.info "thermostat hat den mode gemeldet ${cmd}"
 }
 
@@ -247,7 +249,7 @@ void zwaveEvent (hubitat.zwave.commands.switchmultilevelv1.SwitchMultilevelRepor
 }
 
 void zwaveEvent(hubitat.zwave.Command cmd) {
-	log.debug "${device.displayName}: Unhandled: $cmd"
+	log.warn "${device.displayName}: Unhandled: $cmd"
 }
 
 void off() {
@@ -297,8 +299,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:1,	size:1,	scaledConfigurationValue: parameter1 ? 0x01 : 0x00)
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][1] = parameter1
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter1 = parameter1			
 		}
 		break;
 		case 2:
@@ -307,8 +308,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:2,	size:1,	scaledConfigurationValue: Math.round(parameter2).toInteger())
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][2] = parameter2
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter2 = parameter2
 		}
 		break;
 		case 3:
@@ -317,8 +317,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:3,	size:1,	scaledConfigurationValue: parameter3 ? 0x01 : 0x00)
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][3] = parameter3
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter3 = parameter3
 		}
 		break;
 		case 4:
@@ -327,8 +326,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:4,	size:1,	scaledConfigurationValue: parameter4.toInteger())
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][4] = parameter4
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter4 = parameter4
 		}
 		break;
 		case 5:
@@ -337,8 +335,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:5,	size:1,	scaledConfigurationValue: Math.round(parameter5.toFloat() * 10).toInteger())
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][5] = parameter5
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter5 = parameter5
 		}
 		break;
 		case 6:
@@ -347,8 +344,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:6,	size:1,	scaledConfigurationValue: Math.round(parameter6).toInteger())
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][6] = parameter6
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter6 = parameter6
 		}
 		break;
 		case 7:
@@ -357,8 +353,7 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:7,	size:1,	scaledConfigurationValue: parameter7.toInteger())
 		} else {
 			if (lg) log.info "Parameter nummer  ${cmd.parameterNumber} hat den Wert erfolgreich übernommen"
-            alteEinstellung["${device.id}"][7] = parameter7
-			if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+            state.parameter7 = parameter7
 		}
 		break;
 		case 8:
@@ -369,9 +364,8 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			} else {
 				if (lg) log.info "Parameter nummer 8 hat den Wert erfolgreich übernommen"
 				if (lg) log.info "Parameter nummer 9 hat den Wert erfolgreich übernommen"
-                alteEinstellung["${device.id}"][8] = parameter8
-                alteEinstellung["${device.id}"][9] = parameter9
-				if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+                state.parameter8 = parameter8
+				state.parameter9 = parameter9
 				sendEvent (name: "ExterneTemperatur", value: "true")
 			}
 		} else  {
@@ -381,9 +375,8 @@ void zwaveEvent (hubitat.zwave.commands.configurationv1.ConfigurationReport cmd)
 			} else {
 				if (lg) log.info "Parameter nummer 8 hat den Wert erfolgreich übernommen"
 				if (lg) log.info "Parameter nummer 9 hat den Wert erfolgreich übernommen"
-                alteEinstellung["${device.id}"][8] = parameter8
-                alteEinstellung["${device.id}"][9] = parameter9
-				if (lg) log.debug "alte Einstellung ist ${alteEinstellung}"
+                state.parameter8 = parameter8
+				state.parameter9 = parameter9
 				sendEvent (name: "ExterneTemperatur", value: "false")
 			}
 		}
@@ -516,112 +509,75 @@ void lokaleBedinungDeaktiviert () {
 	sendToDevice(cmds)
 }
 
-@Field static Map<String, Map<Short, Integer>> alteEinstellung = [:]
-
 void sendConfigurationCommand (List<Integer> zuErneuerndeParametern) {
     def cmds = []
     if (zuErneuerndeParametern) {
     zuErneuerndeParametern.each { k ->
-    switch (k) {
-        case 1:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter1 ? 0x01 : 0x00)
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 1 hat den Wert ${parameter1 ? 0x01 : 0x00} übermittelt bekommen"
-        break;
-        case 2:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter2.toFloat()).toInteger())
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 2 hat den Wert ${Math.round(parameter2.toFloat()).toInteger()} übermittelt bekommen"
-        break;
-        case 3:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter3 ? 0x01 : 0x00)
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 3 hat den Wert ${parameter3 ? 0x01 : 0x00} übermittelt bekommen"
-        break;
-        case 4:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter4.toInteger())
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 4 hat den Wert ${parameter4.toInteger()} übermittelt bekommen"
-        break;
-        case 5:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter5.toFloat() * 10).toInteger())
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 5 hat den Wert ${Math.round(parameter5.toFloat() * 10).toInteger()} übermittelt bekommen"
-        break;
-        case 6:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter6.toFloat()).toInteger())
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 6 hat den Wert ${Math.round(parameter6.toFloat()).toInteger()} übermittelt bekommen"
-        break;
-        case 7:
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter7.toInteger())
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-	        if (lg) log.info "Parameter 7 hat den Wert ${parameter7.toInteger()} übermittelt bekommen"
-        break;
-        case 8:
-            if (parameter9) {
-		        cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: -128)
-		        if (lg) log.info "Parameter 8 hat den Wert -128 übermittelt bekommen"
-	        } else {
-		        cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: Math.round(parameter8.toFloat() * 10).toInteger())
-		        if (lg) log.info "Parameter 8 hat den Wert ${Math.round(parameter8.toFloat() * 10).toInteger()} übermittelt bekommen"
-	        }
-            cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
-        break;
-        default:
-        if (lg) log.debug "Falsche Parameternummer für Configuration gesandt"
-    }
+    	switch (k) {
+        	case 1:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter1 ? 0x01 : 0x00)
+				if (lg) log.info "Parameter 1 hat den Wert ${parameter1 ? 0x01 : 0x00} übermittelt bekommen"
+			break;
+			case 2:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter2.toFloat()).toInteger())
+				if (lg) log.info "Parameter 2 hat den Wert ${Math.round(parameter2.toFloat()).toInteger()} übermittelt bekommen"
+			break;
+			case 3:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter3 ? 0x01 : 0x00)
+				if (lg) log.info "Parameter 3 hat den Wert ${parameter3 ? 0x01 : 0x00} übermittelt bekommen"
+			break;
+			case 4:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter4.toInteger())
+				if (lg) log.info "Parameter 4 hat den Wert ${parameter4.toInteger()} übermittelt bekommen"
+			break;
+			case 5:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter5.toFloat() * 10).toInteger())
+				if (lg) log.info "Parameter 5 hat den Wert ${Math.round(parameter5.toFloat() * 10).toInteger()} übermittelt bekommen"
+			break;
+			case 6:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: Math.round(parameter6.toFloat()).toInteger())
+				if (lg) log.info "Parameter 6 hat den Wert ${Math.round(parameter6.toFloat()).toInteger()} übermittelt bekommen"
+			break;
+			case 7:
+				cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:k,	size:1,	scaledConfigurationValue: parameter7.toInteger())
+				if (lg) log.info "Parameter 7 hat den Wert ${parameter7.toInteger()} übermittelt bekommen"
+			break;
+			case 8:
+				if (parameter9) {
+					cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: -128)
+					if (lg) log.info "Parameter 8 hat den Wert -128 übermittelt bekommen"
+				} else {
+					cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber:8,	size:1,	scaledConfigurationValue: Math.round(parameter8.toFloat() * 10).toInteger())
+					if (lg) log.info "Parameter 8 hat den Wert ${Math.round(parameter8.toFloat() * 10).toInteger()} übermittelt bekommen"
+				}            
+			break;
+			default:
+				if (lg) log.debug "Falsche Parameternummer für Configuration gesandt"
+    	}
+		cmds << new hubitat.zwave.commands.configurationv1.ConfigurationGet(parameterNumber:k)
     }
     sendToDevice(cmds)
     }
 }
 
 void updated() {
-    def List<Integer> updatedCommand = [1,2,3,4,5,6,7,8]
-    if (!alteEinstellung."${device.id}") {
-		if (lg) log.debug "alte Eistellung hat keien Daten gespeichert"
-        alteEinstellung."${device.id}" = [:]
-    } else {
-        updatedCommand = []
-		for (int i=1 ; i<=8 ; i++) {
-			switch (i) {
-				case 1:
-					if (parameter1 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 2:
-					if (parameter2 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 3:
-					if (parameter3 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 4:
-					if (parameter4 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 5:
-					if (parameter5 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 6:
-					if (parameter6 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 7:
-					if (parameter7 != alteEinstellung["${device.id}"][i]) {updatedCommand << i}
-				break;
-				case 8:
-					if (parameter9 != alteEinstellung["${device.id}"][9] || (parameter8 != alteEinstellung["${device.id}"][8] && parameter9 == false)) {updatedCommand << 8} 
-				break;
-			}
-	    }
-        updatedCommand.unique()
-    }
-    sendConfigurationCommand (updatedCommand)	
+    def List<Integer> updatedCommand = []
+    if (state.parameter1 == null || state.parameter1 != parameter1) updatedCommand << 1
+	if (state.parameter2 == null || state.parameter2 != parameter2) updatedCommand << 2
+	if (state.parameter3 == null || state.parameter3 != parameter3) updatedCommand << 3
+	if (state.parameter4 == null || state.parameter4 != parameter4) updatedCommand << 4
+	if (state.parameter5 == null || state.parameter5 != parameter5) updatedCommand << 5
+	if (state.parameter6 == null || state.parameter6 != parameter6) updatedCommand << 6
+	if (state.parameter7 == null || state.parameter7 != parameter7) updatedCommand << 7
+	if (state.parameter8 == null || state.parameter9 == null || state.parameter9 != parameter9 || (state.parameter9 == false && state.parameter8 != parameter8)) updatedCommand << 8 
+	if (updatedCommand) sendConfigurationCommand (updatedCommand)	
 }
 
 void installed() {
-    alteEinstellung."${device.id}" = [:]
-	sendEvent(name:"Notifity",						value:"Installed",                                          displayed: true)
-	sendEvent(name:"DeviceResetLocally",			value:false,                                                displayed: true)
-	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"],                                       displayed: true)
-    sendEvent(name: "thermostatFanMode",            value: "circulate",                                         displayed: true)
+	log.info "Device ${device.label?device.label:device.name} is installed"
+    sendEvent(name:"Notifity",						value:"Installed", displayed: true)
+	sendEvent(name:"DeviceResetLocally",			value:false, displayed: true)
+	sendEvent(name:"supportedThermostatFanModes", 	value: ["circulate"], displayed: true)
 	sendEvent(name:"supportedThermostatModes",		value: ["off", "heat", "emergency heat", "cool", "manual"], displayed: true)
 	def cmds = []
 	cmds << new hubitat.zwave.commands.protectionv1.ProtectionGet()
@@ -632,6 +588,7 @@ void installed() {
 	cmds << new hubitat.zwave.commands.sensormultilevelv5.SensorMultilevelGet(sensorType:1)
 	for (int i=1 ; i<=8 ; i++) {
 		cmds << new hubitat.zwave.commands.configurationv1.ConfigurationSet(parameterNumber: i, defaultValue: true)
+		log.info "Parameter nummer ${i} ist zurückgesetzt"
 	}
 	sendToDevice(cmds)
 }
